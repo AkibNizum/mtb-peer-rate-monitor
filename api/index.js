@@ -2,7 +2,7 @@ import ExcelJS from 'exceljs';
 import * as cheerio from 'cheerio';
 import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 import {banks,products} from './catalog.js';
-import {collectBank,deriveRate,uploadedEvidenceDate} from './extractor.js';
+import {deriveRate,uploadedEvidenceDate} from './extractor.js';
 import {generatePowerPoint} from './presentation.js';
 import {generateExactReports} from './exact-template.js';
 
@@ -177,10 +177,10 @@ function addWorkbookOverview(wb,report){
  const s=wb.addWorksheet('Read Me');
  s.columns=[{width:24},{width:83}];s.mergeCells('A1:B1');s.getCell('A1').value='MTB | Peer Deposit Rate Report';
  s.getCell('A1').font={name:'Aptos Display',size:20,bold:true,color:{argb:'FF0B554A'}};
- const info=[['As of report date',report.asOf+' (Asia/Dhaka)'],['Source policy','Latest available official rate sheet effective ON or BEFORE report as-of date; upload text marked unverified'],
+ const info=[['As of report date',report.asOf+' (Asia/Dhaka)'],['Source policy','User-supplied bank PDF text only. Bank website search DISABLED. No previous rates reused'],
  ['Reference bank','Mutual Trust Bank PLC'],['Proposed Rate','ALWAYS BLANK — for ALCO confirmation'],
  ['N/A','Peer has no comparable product in candidate mapping'],['-','Peer offers comparable product but verified MTB tenor unavailable'],
- ['Blank rate','No sufficiently verified current official rate; requires review'],
+ ['Dash (-)','No rate established in the provided PDF; it may be absent or not extractable'],
  ['Storage','Generated in memory and downloaded; no server report archive'],
  ['Publication vs. effective date','An effective date is not necessarily the publication/upload date. We only label dates supported by the official document.'],
  ['Important','Before ALCO, verify every highlighted/blank rate and effective date against the cited original bank publication']];
@@ -279,8 +279,8 @@ async function buildExcel(req,res){
   text:String(x.text||'').slice(0,15_000)
  })).filter(x=>banks.some(b=>b.id===x.bankId)):[];
  const requested=products.filter(p=>scope==='both'||p.type===scope);
- const sources=await Promise.all(banks.map(b=>collectBank(b,date)));
- const records=buildRows(requested,sources,date);
+ const sources=banks.map(b=>uploadedSource(b,uploads,date));
+ const records=pdfOnlyRows(sources,date).filter(r=>requested.some(p=>p.id===r.productId));
  const report={asOf:date,sources,records};
  const wb=new ExcelJS.Workbook();wb.creator='MTB Peer Rate Monitor';wb.created=new Date();wb.calcProperties.fullCalcOnLoad=true;
  addWorkbookOverview(wb,report);
@@ -354,34 +354,82 @@ function evidenceSuggestions(uploads,rows,asOf){
  }
  return {suggestions:suggested.slice(0,110),issues};
 }
+function uploadedSource(bank,uploads,asOf){
+ const candidates=uploads.filter(u=>u.bankId===bank.id).map(u=>({
+  ...u,effectiveDate:uploadedEvidenceDate(u.text+'\n'+u.name)
+ })).filter(u=>!u.effectiveDate||u.effectiveDate<=asOf);
+ const rejected=uploads.filter(u=>u.bankId===bank.id).filter(u=>{
+  const date=uploadedEvidenceDate(u.text+'\n'+u.name);return date&&date>asOf;
+ });
+ const sorted=candidates.slice().sort((a,b)=>{
+  const av=a.effectiveDate||'',bv=b.effectiveDate||'';
+  return bv.localeCompare(av);
+ });
+ const selected=sorted[0]||null;
+ const text=selected?.text||'';
+ const notes=[];
+ if(rejected.length)notes.push(rejected.length+' future-dated PDF(s) excluded');
+ if(!sorted.length)notes.push('No eligible bank PDF supplied — all rates shown as dash');
+ else if(!text.trim())notes.push('Provided PDF contains no readable text — OCR or manual rate entry required');
+ else if(!selected.effectiveDate)notes.push('PDF effective date not established; manually confirm date and rates');
+ else notes.push('Data limited to provided PDF. No website lookup or fallback');
+ return {
+  id:bank.id,name:bank.name,url:'',documentUrl:'',sourceType:'User-supplied PDF',
+  status:!sorted.length?'pdf_not_supplied':!text.trim()?'pdf_unreadable':selected.effectiveDate?'uploaded_pdf':'uploaded_pdf_undated',
+  documentDate:selected?.effectiveDate||'',effectiveDate:selected?.effectiveDate||'',publishedDate:'',
+  note:notes.join('; '),text,uploadedDocuments:uploads.filter(u=>u.bankId===bank.id).map(u=>({
+   name:u.name,readable:!!u.text,effectiveDate:uploadedEvidenceDate(u.text+'\n'+u.name)
+  }))
+ };
+}
+function pdfOnlyRows(sources,asOf){
+ const by=Object.fromEntries(sources.map(s=>[s.id,s]));
+ const records=[];
+ for(const p of products){
+  for(const tenor of p.tenors){
+   for(const bank of banks){
+    const source=by[bank.id];
+    const peer=bank.id==='MTB'?p.name:p.peers[bank.id]||'N/A';
+    let result=null;
+    // Only the text of an uploaded PDF can be used. No bank website extraction.
+    if(peer!=='N/A'&&source?.text&&source.documentDate){
+     result=deriveRate({...source,status:'pdf_extracted'},p,bank,tenor,asOf);
+    }
+    const rate=result?.rate!==undefined&&result?.rate!==null?Number(result.rate):null;
+    const matched=Number.isFinite(rate)&&rate>=0&&rate<=30;
+    records.push({
+     category:p.type,productId:p.id,product:p.name,tenor,bankId:bank.id,peerProduct:peer,
+     rate:matched?rate:null,status:matched?'verified':'pdf_missing',
+     note:matched?'Matched against provided PDF: '+(source.uploadedDocuments?.[0]?.name||bank.name):
+      peer==='N/A'?'No comparable peer product in the existing template; rate shown as dash':
+      'Rate not established from supplied PDF; dash shown. This does not prove the bank has no such rate.',
+     sourceUrl:source.uploadedDocuments?.map(u=>u.name).join('; ')||'No PDF provided',
+     effectiveDate:source.documentDate||'',proposedRate:null
+    });
+   }
+  }
+ }
+ return records;
+}
 async function analyzeReport(req,res){
  const input=quoteJSON(await rawRequest(req,1_000_000)),asOf=String(input.asOf||todayDhaka());
  if(!/^20\d{2}-\d{2}-\d{2}$/.test(asOf)||Number.isNaN(Date.parse(asOf))||asOf>todayDhaka())throw error('Invalid report as-of date');
  const uploads=Array.isArray(input.uploads)?input.uploads.slice(0,24).map(x=>({
-  bankId:String(x.bankId||'').slice(0,16),name:String(x.name||'').slice(0,90),
-  text:String(x.text||'').slice(0,23000)
- })).filter(x=>banks.some(b=>b.id===x.bankId)):[];
- const sources=await Promise.all(banks.map(b=>collectBank(b,asOf)));
- for(const s of sources){
-  s.uploadedDocuments=uploads.filter(u=>u.bankId===s.id).map(u=>({
-   name:u.name,readable:!!u.text,effectiveDate:uploadedEvidenceDate(u.text+'\n'+u.name)
-  }));
-  const newer=s.uploadedDocuments.filter(u=>u.effectiveDate&&u.effectiveDate<=asOf
-    &&(!s.documentDate||u.effectiveDate>s.documentDate)).sort((a,b)=>b.effectiveDate.localeCompare(a.effectiveDate))[0];
-  if(newer){
-    s.uploadedNewer=true;s.status='uploaded_newer_review';
-    s.note=(s.note?s.note+'; ':'')+'Newer user-uploaded sheet '+newer.name+' (effective '+newer.effectiveDate+') supersedes website rates. Automatically matched older rates are held for review until verified from the upload.';
-  }
- }
- const rows=buildRows(products,sources,asOf);
+  bankId:String(x.bankId||'').slice(0,16),name:String(x.name||'').slice(0,100),
+  text:String(x.text||'').slice(0,30000)
+ })).filter(x=>banks.some(b=>b.id===x.bankId)&&/\.pdf$/i.test(x.name)):[];
+ const sources=banks.map(b=>uploadedSource(b,uploads,asOf));
+ const rows=pdfOnlyRows(sources,asOf);
  const matches=evidenceSuggestions(uploads,rows,asOf);
- const stats={verified:rows.filter(x=>x.status==='verified').length,
-  missing:rows.filter(x=>x.status==='review').length,
+ const stats={
+  verified:rows.filter(x=>x.status==='verified').length,
+  missing:rows.filter(x=>x.status==='pdf_missing').length,
   tenorMissing:rows.filter(x=>x.status==='tenor_na').length,
-  uploadedFiles:uploads.length,
-  screenshotSuggestions:matches.suggestions.length};
- return res.status(200).json({asOf,rows,sources,stats,...matches,stateless:true});
+  uploadedFiles:uploads.length,screenshotSuggestions:matches.suggestions.length
+ };
+ return res.status(200).json({asOf,rows,sources,stats,...matches,stateless:true,sourcePolicy:'uploaded-pdfs-only'});
 }
+
 async function downloadExact(req,res){
  const input=quoteJSON(await rawRequest(req,1_900_000));
  const date=String(input.asOf||'');
@@ -414,13 +462,13 @@ export default async function handler(req,res){
  res.setHeader('Cache-Control','no-store');
  try{
   const action=String(req.query.action||'health').split('&')[0];
-  if(action==='health')return res.status(200).json({ok:true,stateless:true,archive:false,authRequired:false,version:'3.0'});
+  if(action==='health')return res.status(200).json({ok:true,stateless:true,archive:false,authRequired:false,bankWebsiteSearch:false,pdfOnly:true,version:'3.2'});
   if(action==='review'&&req.method==='POST')return await analyzeReport(req,res);
   if(action==='ppt-exact'&&req.method==='POST')return await downloadExact(req,res);
   if(action==='ppt'&&req.method==='POST')return res.status(410).json({error:'Exact original templates required. Please use the upload-and-review flow on the website.'});
   if(action==='excel'&&req.method==='POST')return await buildExcel(req,res);
   if(action==='extract'&&req.method==='POST')return await extractPDF(req,res);
-  return res.status(404).json({error:'Supported actions: review, ppt, excel and extract. Report history and report saving are disabled.'});
+  return res.status(404).json({error:'Supported actions: review, ppt-exact, excel and extract. Bank website searches and report saving are disabled.'});
  }catch(e){
   console.error('Peer rate generation error:',String(e.message||e));
   if(!res.headersSent)return res.status(e.status||500).json({error:String(e.message||e)});
