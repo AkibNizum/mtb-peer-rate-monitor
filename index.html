@@ -64,13 +64,13 @@ footer a{color:#137061}
 <h2>Generate your report</h2>
 <div class="fields">
 <div class="field"><label for="scope">Deposit product type</label><select id="scope"><option value="both">FDR + DPS (all products)</option><option value="FDR">Fixed deposits (FDR)</option><option value="DPS">Deposit pension schemes (DPS)</option></select></div>
-<div class="field"><label for="date">Report date</label><input id="date" type="text" disabled value="Current date • Asia/Dhaka"/></div>
+<div class="field"><label for="date">Rate report as of</label><input id="date" type="date" aria-label="Report as-of date" required/></div>
 </div>
 <button id="download" class="mainbutton" onclick="generate()">
 <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 5-5m-5 5-5-5M4 17v3h16v-3"/></svg>
 <span>Generate &amp; download Excel</span></button>
 <div id="status" class="status" role="status" aria-live="polite">No account is needed. The report is generated fresh for each request.</div>
-<div class="note"><b>Data accuracy:</b> Rates that cannot be verified from current official bank publications are left blank and identified for review. <b>MTB Proposed Rate always stays blank.</b> Read the workbook's “Source Review” sheet before using it in ALCO.</div>
+<div class="note"><b>Data accuracy:</b> Uses the latest eligible official bank rate sheet dated on or before the selected date. Rates that cannot be verified from official publications are left blank and identified for review. <b>MTB Proposed Rate always stays blank.</b> Check the workbook’s “Source PDFs” and “Source Review” sheets for effective dates, PDF links and access issues.</div>
 </section>
 <details><summary>Official rate sheet unavailable? Upload PDF or image (optional)</summary>
 <div class="option-body">
@@ -85,6 +85,8 @@ footer a{color:#137061}
 </main>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
 <script>
+const todayBD=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dhaka',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const dateControl=document.getElementById('date');dateControl.value=todayBD();dateControl.max=todayBD();
 const evidence=[];
 const $=s=>document.getElementById(s);
 function message(s,bad=false){const e=$('status');e.textContent=s;e.classList.toggle('error',bad)}
@@ -123,7 +125,7 @@ async function generate(){
  try{
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),110000);
   let r;
-  try{r=await fetch('/api?action=excel',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({scope:$('scope').value,uploads:evidence}),signal:controller.signal,cache:'no-store'})}
+  try{r=await fetch('/api?action=excel',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({scope:$('scope').value,asOf:$('date').value,uploads:evidence}),signal:controller.signal,cache:'no-store'})}
   finally{clearTimeout(timer)}
   if(!r.ok){const error=await r.json().catch(()=>({}));throw Error(error.error||'Report could not be generated (HTTP '+r.status+')')}
   const blob=await r.blob();
