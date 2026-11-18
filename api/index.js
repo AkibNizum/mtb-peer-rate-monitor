@@ -437,7 +437,7 @@ async function analyzeReport(req,res){
 async function downloadExact(req,res){
  const input=quoteJSON(await rawRequest(req,1_900_000));
  const date=String(input.asOf||'');
- if(!/^20\d{2}-\d{2}-\d{2}$/.test(date)||date>todayDhaka())throw error('Please select an eligible report date');
+ if(!/^20\d{2}-\d{2}-\d{2}$/.test(date))throw error('Please select a valid presentation date');
  const data=await generateExactReports(input);
  res.status(200);
  res.setHeader('Cache-Control','private,no-store,max-age=0');
