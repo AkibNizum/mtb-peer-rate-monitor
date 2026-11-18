@@ -86,9 +86,9 @@ function addBankMatrix(ppt,pid,tenors,index,date,page,heading,records,sources){
  const rows=tableCells(pid,tenors,index);
  const colW=[1.60,1.45,1.50,1.33,1.38,1.38,1.38,1.38,1.38]; // 12.78
  const count=rows.length;
- const h=Math.min(5.66,count*0.385),y=1.64;
- s.addTable(rows,{x:0.32,y,w:12.76,h,border:{type:'solid',color:BORDER,pt:0.55},colW,
-  rowH:Math.max(0.3,Math.min(0.55,5.66/count)),fontFace:'Arial',fontSize:8.3,
+ const rowHeight=Math.min(0.52,4.88/count),y=1.64;
+ s.addTable(rows,{x:0.32,y,w:12.76,border:{type:'solid',color:BORDER,pt:0.55},colW,
+  rowH:rowHeight,fontFace:'Arial',fontSize:8.3,
   valign:'mid',margin:0.03,autoFit:false,breakLine:false});
  s.addText('Blank = rate not verified from official source   •   – = confirmed missing peer tenor',{x:0.50,y:6.72,w:11.9,h:0.19,fontSize:8.2,color:GREY,margin:0});
  addSlideNotes(s,records,sources);return s;
@@ -144,7 +144,7 @@ export async function generatePowerPoint(input){
    valueFor(idx,'education-plan',tenor,'DHAKA'),valueFor(idx,'education-plan',tenor,'CITY'),valueFor(idx,'education-plan',tenor,'UCB')];
   rs.push(arr.map((text,j)=>({text,options:{fill:j===0?LIGHT:(i%2?WHITE:BEIGE),color:DARK,align:'center'}})));
  }
- combined.addTable(rs,{x:0.36,y:1.72,w:12.61,colW:[1.35,1.25,1.15,1.15,1.15,1.22,1.22,1.22,1.22,1.22,1.22],rowH:0.48,
+ combined.addTable(rs,{x:0.36,y:1.72,w:12.61,colW:[1.50,1.15,1.15,1.15,1.15,1.08,1.08,1.08,1.08,1.08,1.08],rowH:0.48,
   border:{type:'solid',color:BORDER,pt:.6},fontFace:'Arial',fontSize:8.5,margin:.045,breakLine:false});
  addSlideNotes(combined,records,sources);
  sourcesSlide(ppt,sources,asOf,page++);
