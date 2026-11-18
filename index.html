@@ -151,8 +151,28 @@ details summary{cursor:pointer;padding:14px;font-size:12px;font-weight:760}
 </div>
 <div class="overrides" id="overrides"></div>
 </div></details>
+
+<details id="originalTemplates" open>
+<summary>Exact original MTB PowerPoint templates — required once</summary>
+<div class="detail-content">
+<p class="small">To guarantee the exact slide formats you supplied, select both original presentation files. The website keeps them only in this browser for future reports. The original slides, logos, tables, merged cells, fonts, backgrounds and spacing are retained. No recreated slide layout is used.</p>
+<div class="banks">
+<div class="bank">
+<label for="originalFdr">Original FDR PowerPoint — 11 slides</label>
+<input type="file" id="originalFdr" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation"/>
+<div class="fileinfo" id="templateFdrStatus">Original FDR file not selected</div>
+</div>
+<div class="bank">
+<label for="originalDps">Original DPS PowerPoint — 7 slides</label>
+<input type="file" id="originalDps" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation"/>
+<div class="fileinfo" id="templateDpsStatus">Original DPS file not selected</div>
+</div>
+</div>
+<p class="small" style="margin:12px 0 0">After choosing both once, this browser will remember the template files locally. The downloadable ZIP contains two editable PPTX files with the original slide counts and a separate source-reference text file. No extra source slides will be added.</p>
+</div>
+</details>
 <div class="note"><b>Source controls:</b> Unverified rates stay blank; “–” means a confirmed unavailable tenor; Proposed Rate always remains empty. Rate-sheet dates and official URLs appear in the presentation's Source Documents slide and slide notes.</div>
-<div class="actions"><button class="secondary" onclick="back()">← Back to uploads</button><button class="primary" id="generate" onclick="generate()">Generate editable PPT <span aria-hidden="true">↓</span></button></div>
+<div class="actions"><button class="secondary" onclick="back()">← Back to uploads</button><button class="primary" id="generate" onclick="generate()">Generate original-format PPTs <span aria-hidden="true">↓</span></button></div>
 <div class="status" id="stepTwoStatus" role="status" aria-live="polite"></div>
 </section>
 
@@ -319,10 +339,83 @@ function back(){
  msg('stepOneStatus','You may change your uploads, then click Proceed again.');
  window.scrollTo({top:0,behavior:'smooth'});
 }
+
+const templateFiles=new Map();
+const templateInputDetails={
+ FDR:{input:'originalFdr',status:'templateFdrStatus',slides:11},
+ DPS:{input:'originalDps',status:'templateDpsStatus',slides:7}
+};
+function openTemplateDatabase(){
+ return new Promise((resolve,reject)=>{
+  if(!window.indexedDB)return reject(Error('IndexedDB unavailable'));
+  const request=indexedDB.open('mtb-local-ppt-templates-v1',1);
+  request.onupgradeneeded=()=>request.result.createObjectStore('originals');
+  request.onsuccess=()=>resolve(request.result);
+  request.onerror=()=>reject(request.error||Error('Unable to access local templates'));
+ });
+}
+async function rememberTemplate(kind,bytes){
+ try{
+  const db=await openTemplateDatabase();
+  await new Promise((resolve,reject)=>{
+   const tx=db.transaction('originals','readwrite');
+   tx.objectStore('originals').put(bytes,kind);
+   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+  });
+  db.close();
+ }catch(e){console.warn('Template is available for this session only:',e.message);}
+}
+async function recallTemplates(){
+ try{
+  const db=await openTemplateDatabase();
+  for(const kind of ['FDR','DPS']){
+   const value=await new Promise((resolve,reject)=>{
+    const tx=db.transaction('originals','readonly'),q=tx.objectStore('originals').get(kind);
+    q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);
+   });
+   if(value instanceof ArrayBuffer&&value.byteLength>10000)templateFiles.set(kind,value);
+  }
+  db.close();
+ }catch(e){console.info('Local template recall unavailable:',e.message);}
+ updateTemplateLabels();
+}
+function updateTemplateLabels(){
+ for(const kind of ['FDR','DPS']){
+  const status=document.getElementById(templateInputDetails[kind].status),data=templateFiles.get(kind);
+  if(status)status.textContent=data?'Ready — original '+kind+' template loaded ('+(data.byteLength/1024).toFixed(0)+' KB)':'Original '+kind+' template not selected';
+ }
+}
+async function fileTemplate(kind,file){
+ if(!file)return;
+ if(!/\.pptx$/i.test(file.name)||file.size<10000||file.size>3_000_000){
+  msg('stepTwoStatus','Choose the original '+kind+' .pptx file, under 3 MB.',true);return;
+ }
+ const bytes=await file.arrayBuffer(),magic=new Uint8Array(bytes,0,2);
+ if(magic[0]!==80||magic[1]!==75){msg('stepTwoStatus','The file selected is not a valid PPTX archive.',true);return;}
+ templateFiles.set(kind,bytes);updateTemplateLabels();
+ await rememberTemplate(kind,bytes);
+ msg('stepTwoStatus','Original '+kind+' template loaded. It will be preserved for subsequent reports on this device.');
+}
+function encodeBinary(buffer){
+ // Input files are small original PPTX templates; never retain report output.
+ const bytes=new Uint8Array(buffer);let binary='';
+ const block=24000;for(let i=0;i<bytes.length;i+=block){
+  const part=bytes.subarray(i,i+block);
+  binary+=String.fromCharCode.apply(null,part);
+ }
+ return btoa(binary);
+}
+for(const kind of ['FDR','DPS']){
+ const el=document.getElementById(templateInputDetails[kind].input);
+ if(el)el.addEventListener('change',()=>{fileTemplate(kind,el.files[0]).catch(e=>msg('stepTwoStatus',e.message,true));});
+}
+recallTemplates();
+
 async function generate(){
  if(working||!analysis)return;
  setWorking(true);msg('stepTwoStatus','Creating editable FDR and DPS PowerPoint…');
  try{
+  if(!templateFiles.has('FDR')||!templateFiles.has('DPS'))throw Error('Select both original FDR and DPS PowerPoint templates first. The report will not be generated in a different format.');
   const records=analysis.rows.map(r=>({...r,proposedRate:null}));
   const byKey=new Map(records.map((r,i)=>[r.productId+'|'+r.tenor+'|'+r.bankId,i]));
   for(const el of document.querySelectorAll('input[data-sug]:checked')){
@@ -336,14 +429,15 @@ async function generate(){
    records[index].rate=value.rate;records[index].status='uploaded_reviewed';
    records[index].note=value.evidence;records[index].sourceUrl='Uploaded official document (reviewed by user)';
   }
-  const response=await fetch('/api?action=ppt',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({asOf:analysis.asOf,records,sources:analysis.sources}),cache:'no-store'});
+  const originalTemplates={FDR:encodeBinary(templateFiles.get('FDR')),DPS:encodeBinary(templateFiles.get('DPS'))};
+  const response=await fetch('/api?action=ppt-exact',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({asOf:analysis.asOf,records,sources:analysis.sources,templates:originalTemplates}),cache:'no-store'});
   if(!response.ok){const e=await response.json().catch(()=>({}));throw Error(e.error||'PowerPoint generation failed (HTTP '+response.status+')')}
   const blob=await response.blob();
-  if(blob.size<3000)throw Error('Generated PowerPoint file is unexpectedly empty.');
+  if(blob.size<3000)throw Error('Generated original-template PowerPoint ZIP is unexpectedly empty.');
   const url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='MTB_Peer_Bank_FDR_DPS_Rates_'+analysis.asOf+'.pptx';
+  a.href=url;a.download='MTB_Exact_Peer_Presentations_'+analysis.asOf+'.zip';
   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),15000);
-  msg('stepTwoStatus','PowerPoint downloaded. The website did not save any report or uploaded document.');
+  msg('stepTwoStatus','Original-format FDR and DPS presentations downloaded in a ZIP. No report was saved.');
  }catch(e){msg('stepTwoStatus',e.message||String(e),true)}
  finally{setWorking(false)}
 }
