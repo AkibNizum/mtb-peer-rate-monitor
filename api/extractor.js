@@ -350,7 +350,7 @@ function parsePDF(src,p,tenor){
 
 export function deriveRate(src,product,bank,tenor,asOf){
  if(!src||src.status==='access_blocked'||src.status==='unavailable'||src.uploadedNewer) return null;
- if(src.id==='MTB')return parseMTB(src,product,tenor,asOf);
+ if(src.id==='MTB')return Array.isArray(src.tables)?parseMTB(src,product,tenor,asOf):null; // do not confuse PDF-only input with live HTML tables
  if((src.status==='pdf_extracted'||src.status==='pdf_extracted_fallback')&&src.documentDate<=asOf)return parsePDF(src,product,tenor);
  return null;
 }
