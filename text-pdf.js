@@ -112,8 +112,9 @@ async function makeUnicodePdf(text,title,size){
  const limitW=w-2*margin;
  const output=[];
  const words=normalize(text).split('\n');
- let canvas,ctx,y,first=true,page=[];
+ let canvas,ctx,y,first=true,currentTextLines=[];
  const newPage=()=>{
+  currentTextLines=[];
   canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
   ctx=canvas.getContext('2d',{alpha:false});
   if(!ctx)throw Error('This device cannot create a PDF canvas.');
@@ -124,6 +125,7 @@ async function makeUnicodePdf(text,title,size){
   if(first&&title){
    ctx.font='bold '+Math.round(17*scale)+'px "Noto Sans Bengali",Arial,sans-serif';
    ctx.fillText(title,margin,y,w-2*margin);
+   currentTextLines.push({text:title,x:margin/scale,y:(h-y)/scale,size:17});
    y+=Math.round(28*scale);
    ctx.strokeStyle='#bdcdc6';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(margin,y);ctx.lineTo(w-margin,y);ctx.stroke();
    y+=Math.round(25*scale);
@@ -134,7 +136,7 @@ async function makeUnicodePdf(text,title,size){
  const finish=async()=>{
   if(!canvas)return;
   const blob=await canvasJpeg(canvas);
-  output.push({bytes:new Uint8Array(await blob.arrayBuffer()),width:w,height:h,page:PAGE,margin:0});
+  output.push({bytes:new Uint8Array(await blob.arrayBuffer()),width:w,height:h,page:PAGE,margin:0,searchTextLines:currentTextLines.slice()});
   canvas.width=0;canvas.height=0;canvas=null;
  };
  newPage();
@@ -143,6 +145,11 @@ async function makeUnicodePdf(text,title,size){
   if(y+lineHeight>h-margin){
    await finish();newPage();
   }
+ };
+ const paintLine=(str)=>{
+  if(!str)return;
+  ctx.fillText(str,margin,y);
+  currentTextLines.push({text:str,x:margin/scale,y:(h-y)/scale,size:Number(size)||11});
  };
  const drawLine=async(s)=>{
   const str=String(s);
@@ -153,17 +160,17 @@ async function makeUnicodePdf(text,title,size){
   for(const chunk of chunks){
    if(!chunk)continue;
    if(ctx.measureText(built+chunk).width<=limitW){built+=chunk;continue;}
-   if(built.trim()){ctx.fillText(built.trimEnd(),margin,y);await nextLine();built='';}
+   if(built.trim()){paintLine(built.trimEnd());await nextLine();built='';}
    if(!chunk.trim())continue;
    if(ctx.measureText(chunk).width<=limitW){built=chunk;continue;}
    for(const ch of Array.from(chunk)){
     if(ctx.measureText(built+ch).width>limitW&&built){
-     ctx.fillText(built,margin,y);await nextLine();built='';
+     paintLine(built);await nextLine();built='';
     }
     built+=ch;
    }
   }
-  if(built)ctx.fillText(built.trimEnd(),margin,y);
+  if(built)paintLine(built.trimEnd());
   await nextLine();
  };
  for(const paragraph of words)await drawLine(paragraph);
@@ -186,12 +193,12 @@ async function generate(){
  if(text.length>MAX_CHARS){setStatus('The maximum is 120,000 characters per PDF.',true);return;}
  const button=$('textPdfGenerate');button.disabled=true;setStatus('Generating PDF in your browser…');
  try{
-  // Standard English stays selectable/searchable in the PDF.
-  // Any non-ASCII characters use an image-backed document so Bangla and other scripts display reliably.
+  // All PDFs include real extractable text. Unicode uses a visually rendered page
+  // with an invisible, copyable/searchable Unicode text layer behind the image.
   const plain=/^[\x09\x0a\x0d\x20-\x7e]*$/.test(text+title);
   const pdf=plain?createSelectableTextPdf(text,title,fontSize):await makeUnicodePdf(text,title,fontSize);
   download(pdf,filename);
-  setStatus('PDF downloaded ('+(pdf.size/1024).toFixed(0)+' KB). '+(plain?'Text remains selectable.':'Non-English text is preserved visually.')+' Nothing was uploaded or saved.');
+  setStatus('Searchable PDF downloaded ('+(pdf.size/1024).toFixed(0)+' KB). Text is extractable'+(plain?'':' from its Unicode layer')+'. Nothing was uploaded or saved.');
  }catch(e){setStatus(e.message||String(e),true)}
  finally{button.disabled=false;}
 }
