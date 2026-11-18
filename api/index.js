@@ -143,7 +143,7 @@ function buildRows(selectedProducts,sources,asOf){
  for(const p of selectedProducts)for(const tenor of p.tenors)for(const bank of banks){
   const peer=bank.id==='MTB'?p.name:(p.peers[bank.id]||'N/A');
   const src=by[bank.id],result=peer==='N/A'?null:deriveRate(src,p,bank,tenor,asOf);
-  const status=peer==='N/A'?'product_na':result?.rate!==null&&result?.rate!==undefined?'verified':'review';
+  const status=peer==='N/A'?'product_na':result?.status==='tenor_na'?'tenor_na':result?.rate!==null&&result?.rate!==undefined?'verified':'review';
   const note=peer==='N/A'?'No comparable peer product in current comparison map'
    :result?.note||src?.note||'No verified current rate for this exact product and tenor';
   records.push({category:p.type,productId:p.id,product:p.name,tenor,
