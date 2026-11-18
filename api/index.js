@@ -332,12 +332,16 @@ function evidenceSuggestions(uploads,rows,asOf){
    for(const tenor of p.tenors){
     const expected=strip(tenor);
     if(expected.length<3)continue;
-    for(const line of lines){
-     const one=rateOne(line),normalized=strip(line);
-     if(one===null||!normalized.includes(expected)||!normalized.includes(alias))continue;
+    for(let lineIndex=0;lineIndex<lines.length;lineIndex++){
+     const line=lines[lineIndex],one=rateOne(line),normalized=strip(line);
+     if(one===null||!normalized.includes(expected))continue;
+     // In narrow screenshots product labels often appear in a heading one or two lines above
+     // the tenor/rate row. Do not assume a label beyond the immediate context.
+     const scope=strip(lines.slice(Math.max(0,lineIndex-3),lineIndex+1).join(' '));
+     if(!scope.includes(alias))continue;
      const key=p.id+'|'+tenor+'|'+bank.id;
      if(!cand.some(x=>x.key===key))cand.push({key,bankId:bank.id,productId:p.id,tenor,
-       rate:one,sourceName:up.name,evidence:line.slice(0,180)});
+       rate:one,sourceName:up.name,evidence:lines.slice(Math.max(0,lineIndex-1),lineIndex+1).join(' | ').slice(0,180)});
     }
    }
   }
