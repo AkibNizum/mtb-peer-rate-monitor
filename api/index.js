@@ -4,6 +4,7 @@ import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 import {banks,products} from './catalog.js';
 import {collectBank,deriveRate,uploadedEvidenceDate} from './extractor.js';
 import {generatePowerPoint} from './presentation.js';
+import {generateExactReports} from './exact-template.js';
 
 export const config={api:{bodyParser:false}};
 const MAX_REQUEST=3_100_000;
@@ -381,6 +382,19 @@ async function analyzeReport(req,res){
   screenshotSuggestions:matches.suggestions.length};
  return res.status(200).json({asOf,rows,sources,stats,...matches,stateless:true});
 }
+async function downloadExact(req,res){
+ const input=quoteJSON(await rawRequest(req,1_900_000));
+ const date=String(input.asOf||'');
+ if(!/^20\d{2}-\d{2}-\d{2}$/.test(date)||date>todayDhaka())throw error('Please select an eligible report date');
+ const data=await generateExactReports(input);
+ res.status(200);
+ res.setHeader('Cache-Control','private,no-store,max-age=0');
+ res.setHeader('Content-Type','application/zip');
+ res.setHeader('Content-Disposition','attachment; filename="MTB_Exact_Peer_Presentations_'+date+'.zip"');
+ res.setHeader('Content-Length',data.length);
+ return res.end(data);
+}
+
 async function downloadPpt(req,res){
  const input=quoteJSON(await rawRequest(req,1_000_000));
  const asOf=String(input.asOf||''),rows=input.records;
@@ -402,7 +416,8 @@ export default async function handler(req,res){
   const action=String(req.query.action||'health').split('&')[0];
   if(action==='health')return res.status(200).json({ok:true,stateless:true,archive:false,authRequired:false,version:'3.0'});
   if(action==='review'&&req.method==='POST')return await analyzeReport(req,res);
-  if(action==='ppt'&&req.method==='POST')return await downloadPpt(req,res);
+  if(action==='ppt-exact'&&req.method==='POST')return await downloadExact(req,res);
+  if(action==='ppt'&&req.method==='POST')return res.status(410).json({error:'Exact original templates required. Please use the upload-and-review flow on the website.'});
   if(action==='excel'&&req.method==='POST')return await buildExcel(req,res);
   if(action==='extract'&&req.method==='POST')return await extractPDF(req,res);
   return res.status(404).json({error:'Supported actions: review, ppt, excel and extract. Report history and report saving are disabled.'});
