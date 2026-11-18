@@ -327,7 +327,6 @@ function parsePDF(src,p,tenor){
   }
   const mapping={
    'brick-by-brick':'Prime Deposit Premium Scheme',
-   'angona-dps':'Prime Deposit Premium Scheme',
    'millionaire':'Prime Millionaire Scheme (PMS)',
    'kotipati':'Prime Kotipoti DPS',
    'lakhopoti':'Lakhopati Deposit Scheme (LDS)',
