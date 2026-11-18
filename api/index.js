@@ -355,6 +355,7 @@ async function analyzeReport(req,res){
   text:String(x.text||'').slice(0,23000)
  })).filter(x=>banks.some(b=>b.id===x.bankId)):[];
  const sources=await Promise.all(banks.map(b=>collectBank(b,asOf)));
+ for(const s of sources)s.uploadedDocuments=uploads.filter(u=>u.bankId===s.id).map(u=>({name:u.name,readable:!!u.text}));
  const rows=buildRows(products,sources,asOf);
  const matches=evidenceSuggestions(uploads,rows,asOf);
  const stats={verified:rows.filter(x=>x.status==='verified').length,
