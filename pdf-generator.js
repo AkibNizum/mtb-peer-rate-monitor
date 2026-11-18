@@ -79,7 +79,7 @@ function render(){
   '<div class="pdfPageActions">'+
   '<button type="button" aria-label="Move page '+(i+1)+' earlier" data-act="up" data-id="'+item.id+'" '+(i===0?'disabled':'')+'>↑</button>'+
   '<button type="button" aria-label="Move page '+(i+1)+' later" data-act="down" data-id="'+item.id+'" '+(i===items.length-1?'disabled':'')+'>↓</button>'+
-  '<button type="button" aria-label="Remove page '+(i+1)+'" data-act="remove" data-id="'+item.id+'>×</button></div></article>').join('');
+  '<button type="button" aria-label="Remove page '+(i+1)+'" data-act="remove" data-id="'+item.id+'">×</button></div></article>').join('');
 }
 function pdfText(str){return ENCODER.encode(str);}
 function assemblePdf(pages){
