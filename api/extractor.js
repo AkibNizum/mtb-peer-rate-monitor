@@ -213,16 +213,76 @@ function parseMTB(src,p,tenor,asOf){
  return null;
 }
 function pdfLines(src){return String(src.text||'').split(/\r?\n/).map(clean).filter(Boolean)}
+function missingTenor(src,note){
+ return {rate:null,status:'tenor_na',sourceUrl:src.documentUrl||src.url,effectiveDate:src.documentDate,note:note||'Comparable product exists, but this MTB tenor is not offered in the cited official sheet'};
+}
+function rateVector(row,expected){
+ const tok=clean(row).split(/\s+/);
+ if(tok.length!==expected||!tok.every(x=>x==='-'||/^\d{1,2}(?:\.\d{1,3})?%$/.test(x)))return null;
+ return tok.map(x=>x==='-'?null:Number(x.slice(0,-1)));
+}
+function getEblDpsRow(lines,kind){
+ const start=lines.findIndex(l=>/^Recurring Deposit$/i.test(l));
+ if(start<0)return null;
+ const end=lines.findIndex((l,i)=>i>start&&/^Time Frame$/i.test(l));
+ const section=lines.slice(start,end>start?end:start+100);
+ const patterns={
+  'brick-by-brick':/\bEBL\s+Confidence\b/i,
+  'angona-dps':/\bEBL\s+Women\s+Confidence\b/i,
+  'millionaire':/\bEBL\s+Millionaire\s+Scheme\b/i,
+  'kotipati':/\bEBL\s+Kotipoti\b/i,
+  'education-plan':/\bEBL\s+Child\s+Future\s+Plan\b/i,
+  'junior-flexi':/\bEBL\s+Child\s+Future\s+Plan\b/i
+ };
+ const pat=patterns[kind];if(!pat)return null;
+ let name='';
+ for(const line of section){
+  const v=rateVector(line,15);
+  if(v){
+   if(pat.test(name))return v;
+   name='';
+  }else{name=clean(name+' '+line).slice(-160);}
+ }
+ return null;
+}
+function primeRow(lines,name){
+ const row=lines.find(x=>x.toLowerCase().startsWith(name.toLowerCase()));
+ if(!row)return null;
+ const tokens=clean(row.slice(name.length)).split(/\s+/).filter(Boolean);
+ if(tokens.length!==8)return null;
+ if(!tokens.every(x=>x==='-'||/^\d{1,2}(?:\.\d{1,3})?%$/.test(x)))return null;
+ return tokens.map(x=>x==='-'?null:Number(x.slice(0,-1)));
+}
 function parsePDF(src,p,tenor){
  const lines=pdfLines(src),tk=tenorKey(tenor);
  if(!lines.length)return null;
- if(src.id==='EBL'&&p.id==='fixed-deposit'){
-  const start=lines.findIndex(x=>/Business Unit:\s*Retail/i.test(x));
-  const end=lines.findIndex((x,i)=>i>start&&/Business Unit:\s*Corporate/i.test(x));
-  if(start<0)return null;
-  const arr=lines.slice(start,end>start?end:Math.min(start+110,lines.length));
-  const row=arr.find(x=>/^FD\s+\d+\s*(?:Month|Year)s?\b/i.test(x)&&tenorKey(x.match(/^FD\s+(\d+\s*(?:Month|Year)s?)/i)?.[1])===tk);
-  return row?candidate(rateFromText(row),src,'EBL retail FD, first amount band'):null;
+ if(src.id==='EBL'){
+  if(p.id==='fixed-deposit'){
+   const start=lines.findIndex(x=>/Business Unit:\s*Retail/i.test(x));
+   const end=lines.findIndex((x,i)=>i>start&&/Business Unit:\s*Corporate/i.test(x));
+   if(start<0)return null;
+   const arr=lines.slice(start,end>start?end:Math.min(start+110,lines.length));
+   const row=arr.find(x=>/^FD\s+\d+\s*(?:Month|Year)s?\b/i.test(x)&&tenorKey(x.match(/^FD\s+(\d+\s*(?:Month|Year)s?)/i)?.[1])===tk);
+   if(row)return candidate(rateFromText(row),src,'EBL retail FD, first amount band');
+   return missingTenor(src,'EBL retail FD is offered, but the requested MTB tenor is not listed in the official schedule.');
+  }
+  if(p.id==='monthly-benefit'){
+   const row=lines.find(x=>/^EBL Repeat\s+(?:\d+(?:\.\d+)?%\s*){3}/i.test(x));
+   const index={m12:0,m24:1,m36:2}[tk];
+   if(row&&index!==undefined){
+    const matches=[...row.matchAll(/(\d+(?:\.\d+)?)%/g)].map(x=>Number(x[1]));
+    return candidate(matches[index]??null,src,'EBL Repeat: 1/2/3-year rates per official PDF');
+   }
+   return null;
+  }
+  const dps=getEblDpsRow(lines,p.id);
+  if(dps){
+   const tenors=[1,2,3,4,5,6,7,8,9,10,12,14,15,18,20].map(y=>'m'+y*12);
+   const idx=tenors.indexOf(tk);
+   if(idx<0)return missingTenor(src,'Comparable EBL recurring deposit product does not publish this tenor.');
+   return dps[idx]===null?missingTenor(src,'The official EBL rate sheet marks this tenor unavailable for the comparable scheme.')
+    :candidate(dps[idx],src,'Official EBL recurring deposit rate for the specific tenure');
+  }
  }
  if(src.id==='PRIME'){
   if(p.id==='fixed-deposit'){
@@ -235,28 +295,59 @@ function parsePDF(src,p,tenor){
     if(/^(Prime I-First|Prime Fixed Deposit Plus)/i.test(row))active=false;
     if(!active)continue;
     const v=row.match(/(?:^Prime Fixed Deposit\s+|\b)(\d+M(?:\s*&\s*above)?)\s+(\d+(?:\.\d+)?%)/i);
-    if(v&&tenorKey(v[1])===tk)return candidate(numberRate(v[2]),src,'Prime conventional fixed deposit, any amount');
+    if(v){
+     const rate=numberRate(v[2]);
+     if(tenorKey(v[1])===tk)return candidate(rate,src,'Prime conventional fixed deposit, any amount');
+     if(/24M\s*&\s*above/i.test(v[1])&&/^m(?:[3-9]\d|\d{3,})$/.test(tk))return candidate(rate,src,'Prime FD 24 months and above, any amount');
+    }
    }
-   return null;
+   return missingTenor(src,'Requested MTB tenor is not separately offered by Prime Fixed Deposit in the official conventional rate sheet.');
   }
   if(p.id==='fdr-days'){
    const row=lines.find(x=>/^Prime Fixed Deposit Plus\s+91 Days/i.test(x));
    if(row){
     const pairs=[...row.matchAll(/(\d+\s+Days)\s+(\d+(?:\.\d+)?%)/gi)];
-    const m=pairs.find(x=>tenorKey(x[1])===tk);if(m)return candidate(numberRate(m[2]),src,'Prime Fixed Deposit Plus, first amount band');
+    const m=pairs.find(x=>tenorKey(x[1])===tk);
+    if(m)return candidate(numberRate(m[2]),src,'Prime Fixed Deposit Plus, first amount band');
+    return missingTenor(src,'Prime Fixed Deposit Plus does not list this specific number of days in the official sheet.');
    }
   }
   if(p.id==='monthly-benefit'){
    const row=lines.find(x=>/Prime Monthly Income Scheme \(PMIS\)/i.test(x));
    const map={m12:0,m36:1,m60:2},idx=map[tk];
-   if(row&&idx!==undefined){
+   if(row){
     const rates=[...row.matchAll(/(\d+(?:\.\d+)?)%/g)].map(v=>Number(v[1]));
-    return candidate(rates[idx]??null,src,'Prime PMIS single installment: 12, 36 and 60 month rates');
+    if(idx!==undefined)return candidate(rates[idx]??null,src,'Prime PMIS: 12, 36, 60 month rates');
+    return missingTenor(src,'Prime PMIS has no rate for this requested MTB tenor.');
+   }
+  }
+  if(p.id==='double-saver'){
+   const row=lines.find(x=>/^Double Benefit Deposit Scheme/i.test(x));
+   if(row&&/Double in\s+7Y\s+11M/i.test(row))return missingTenor(src,'Prime Double Benefit rate corresponds to 7 years 11 months, not MTB 8 years 7 months.');
+  }
+  const mapping={
+   'brick-by-brick':'Prime Deposit Premium Scheme',
+   'angona-dps':'Prime Deposit Premium Scheme',
+   'millionaire':'Prime Millionaire Scheme (PMS)',
+   'kotipati':'Prime Kotipoti DPS',
+   'lakhopoti':'Lakhopati Deposit Scheme (LDS)',
+   'education-plan':'Prime Edu DPS',
+   'junior-flexi':'Prime Edu DPS'
+  };
+  const name=mapping[p.id];
+  if(name){
+   const rates=primeRow(lines,name);
+   if(rates){
+    const idx=[36,48,60,84,120,144,180,240].indexOf(Number(tk.startsWith('m')?tk.slice(1):-1));
+    if(idx<0)return missingTenor(src,'Prime scheme does not list the requested MTB tenor.');
+    if(rates[idx]===null)return missingTenor(src,'Prime scheme rate sheet explicitly marks this tenor unavailable.');
+    return candidate(rates[idx],src,'Official Prime consumer recurring deposit scheme rate');
    }
   }
  }
  return null;
 }
+
 export function deriveRate(src,product,bank,tenor,asOf){
  if(!src||src.status==='access_blocked'||src.status==='unavailable')return null;
  if(src.id==='MTB')return parseMTB(src,product,tenor,asOf);
