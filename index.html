@@ -1,140 +1,267 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<meta name="theme-color" content="#0c584d"/>
-<title>MTB Peer Deposit Rates | Excel Generator</title>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>MTB | ALCO Peer Bank PowerPoint Generator</title>
+<meta name="theme-color" content="#0E6053"/>
 <style>
-:root{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#173b35;background:#f5f8f7}
-*{box-sizing:border-box}
-body{margin:0}
-header{background:#fff;border-bottom:1px solid #dde9e5}
-header .bar{max-width:1020px;padding:19px 24px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.logo{display:flex;align-items:center;gap:12px}
-.logo b{display:grid;place-items:center;background:#0c6255;color:#fff;border-radius:12px;font-weight:800;font-size:21px;width:45px;height:45px}
-.logo div strong{font-size:16px;color:#134b40}
-.logo div small{display:block;font-size:11px;color:#718880;letter-spacing:.04em}
-.pill{font-size:12px;font-weight:650;border-radius:20px;background:#ecf7f2;color:#24634b;padding:7px 11px}
-main{max-width:1020px;padding:45px 24px;margin:auto}
-.hero{display:flex;justify-content:space-between;gap:30px;margin-bottom:23px;align-items:center}
-.kicker{text-transform:uppercase;letter-spacing:.14em;font-size:11px;color:#137565;font-weight:800;margin:0 0 13px}
-h1{font-size:clamp(30px,5vw,44px);line-height:1.12;letter-spacing:-.045em;margin:0}
-.sub{line-height:1.65;max-width:560px;font-size:14px;color:#617770;margin:15px 0 0}
-.excel-illustration{flex:0 0 205px;background:#e7f3ef;border:1px solid #d8eae4;padding:25px;border-radius:20px;text-align:center}
-.excel-illustration .file{background:#fff;width:108px;height:127px;margin:auto;border-radius:10px;box-shadow:0 7px 20px #164b3b15;padding:21px}
-.excel-illustration .file svg{width:65px;height:65px}
-.excel-illustration .file span{font-size:10px;font-weight:800;color:#327861}
-.panel{background:#fff;padding:27px 30px;border:1px solid #dce8e4;border-radius:17px;box-shadow:0 8px 27px #163f3310}
-h2{font-size:17px;margin:0 0 20px}
-.fields{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:end}
-.field{display:flex;flex-direction:column;gap:7px}
-label{font-size:12px;color:#486b61;font-weight:700}
-select,input{background:#fff;color:#1e4038;border:1px solid #c9dad4;border-radius:9px;height:43px;padding:0 13px;font:inherit}
-select:focus,input:focus{outline:2px solid #98caba;outline-offset:1px}
-button{font:inherit;cursor:pointer}
-.mainbutton{margin-top:20px;background:#086657;border:1px solid #086657;color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;border-radius:10px;min-height:55px;width:100%;font-weight:750;font-size:16px}
-.mainbutton:hover{background:#075749}
-button:disabled{opacity:.65;cursor:wait}
-.status{margin-top:14px;font-size:13px;color:#526d64;line-height:1.6;min-height:20px}
-.status.error{color:#a13d35}
-.note{margin-top:22px;border:1px solid #dce9e5;background:#f5faf8;border-radius:11px;padding:14px 16px;color:#49665d;font-size:12px;line-height:1.6}
-.note b{color:#19584b}
-details{background:white;border:1px solid #dce8e4;border-radius:14px;margin-top:17px;overflow:hidden}
-details summary{cursor:pointer;padding:17px 22px;list-style:none;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:750}
-details summary::-webkit-details-marker{display:none}
-details summary:after{content:"+";font-size:22px;font-weight:400;color:#3d7867}
-details[open] summary:after{content:"−"}
-.option-body{padding:0 22px 23px;border-top:1px solid #edf2f0}
-.option-body p{font-size:12px;line-height:1.6;color:#688076;margin:13px 0}
-.flexline{display:flex;gap:12px;align-items:center}
-.flexline select{min-width:168px}
-.upload-list{margin-top:12px}
-.item{border:1px solid #e0e9e5;border-radius:8px;padding:11px;margin:7px 0;display:flex;justify-content:space-between;gap:10px;font-size:12px}
-.item button{padding:4px 8px;background:#f1f5f3;border:1px solid #dce6e2;border-radius:6px}
-footer{color:#7b9089;font-size:11px;padding:25px 2px;line-height:1.7}
-footer a{color:#137061}
-@media(max-width:700px){header .bar{padding:14px 16px}main{padding:28px 16px}.hero{align-items:flex-start}.excel-illustration{display:none}.panel{padding:22px 18px}.fields{grid-template-columns:1fr}.pill{font-size:10px}.flexline{flex-wrap:wrap}}
-</style>
-</head>
-<body>
-<header><div class="bar"><div class="logo"><b>M</b><div><strong>MTB Peer Rate Monitor</strong><small>OFFICIAL DEPOSIT RATE COMPARISON</small></div></div><span class="pill">Public • No account required</span></div></header>
-<main>
-<div class="hero"><div><p class="kicker">Excel report generator</p><h1>Peer deposit rates.<br/>One click. One Excel.</h1><p class="sub">Compare MTB's FDR and DPS products with six peer banks using their officially published rate information. Download an editable workbook directly—no login and no saved reports.</p></div><div class="excel-illustration" aria-hidden="true"><div class="file"><svg viewBox="0 0 64 64"><path fill="#dceee6" d="M8 4h34l14 14v42H8z"/><path fill="#24825d" d="M42 4v14h14zM8 27h48v33H8z"/><path fill="#fff" d="M16 37h8l4 7 4-7h8l-8 11 8 11h-8l-4-7-4 7h-8l8-11z"/></svg><span>EXCEL</span></div></div></div>
-<section class="panel">
-<h2>Generate your report</h2>
-<div class="fields">
-<div class="field"><label for="scope">Deposit product type</label><select id="scope"><option value="both">FDR + DPS (all products)</option><option value="FDR">Fixed deposits (FDR)</option><option value="DPS">Deposit pension schemes (DPS)</option></select></div>
-<div class="field"><label for="date">Rate report as of</label><input id="date" type="date" aria-label="Report as-of date" required/></div>
-</div>
-<button id="download" class="mainbutton" onclick="generate()">
-<svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 5-5m-5 5-5-5M4 17v3h16v-3"/></svg>
-<span>Generate &amp; download Excel</span></button>
-<div id="status" class="status" role="status" aria-live="polite">No account is needed. The report is generated fresh for each request.</div>
-<div class="note"><b>Data accuracy:</b> Uses the latest eligible official bank rate sheet dated on or before the selected date. Rates that cannot be verified from official publications are left blank and identified for review. <b>MTB Proposed Rate always stays blank.</b> Check the workbook’s “Source PDFs” and “Source Review” sheets for effective dates, PDF links and access issues.</div>
+:root{font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:#193c35;background:#f5f8f7}
+*{box-sizing:border-box}body{margin:0}
+header{background:#fff;border-bottom:1px solid #e2ece7}
+.container{max-width:1040px;margin:auto;padding:0 20px}
+nav{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 0}
+.brand{display:flex;align-items:center;gap:12px;font-size:14px;font-weight:790;line-height:1.3}
+.brandIcon{display:grid;place-items:center;background:#0b6153;color:#fff;width:44px;height:44px;border-radius:12px;font-size:19px;letter-spacing:-.05em}
+.muted{color:#6a8479}.brand small{display:block;font-size:11px;font-weight:530;color:#72877e}
+.navNote{background:#eaf6f1;border-radius:30px;color:#17604d;font-size:12px;padding:7px 12px}
+main{padding:38px 0 60px}
+h1{font-size:clamp(29px,4.3vw,42px);line-height:1.14;letter-spacing:-.04em;margin:0 0 10px}
+.desc{font-size:14px;color:#5d756a;line-height:1.68;max-width:690px;margin:0 0 22px}
+.stepper{display:flex;gap:10px;margin:24px 0 19px}
+.step{display:flex;align-items:center;gap:8px;font-size:12px;color:#8a9a94}
+.step strong{display:grid;place-items:center;border-radius:30px;width:25px;height:25px;border:1px solid #c9d8d1;color:#647a71;background:#fff}
+.step.active{color:#135c4e;font-weight:770}
+.step.active strong{border-color:#126151;background:#126151;color:#fff}
+.step.sep{font-size:20px;display:block;color:#c3d3ca}
+.panel{background:#fff;border:1px solid #dfe9e5;border-radius:18px;padding:28px 30px;box-shadow:0 12px 25px #143c3210}
+h2{font-size:18px;margin:0 0 9px}h3{font-size:13px;margin:0 0 6px}
+.small{font-size:12px;line-height:1.6;color:#697f74;margin:0 0 18px}
+.group{display:grid;grid-template-columns:210px 1fr;gap:18px;align-items:center;margin:17px 0 22px}
+label{font-size:12px;font-weight:690;color:#45675b;display:block;margin-bottom:8px}
+select,input,button{font:inherit}
+input[type=date],select,input[type=number],input[type=text]{min-height:42px;border:1px solid #d0ded7;border-radius:9px;padding:0 11px;background:#fff;color:#193c35}
+input:focus,select:focus{outline:2px solid #93bdaf;outline-offset:1px}
+.primary{display:flex;align-items:center;justify-content:center;gap:10px;background:#0b6455;color:white;border:1px solid #0b6455;border-radius:10px;min-height:52px;padding:13px 20px;font-weight:750;cursor:pointer}
+.primary:hover{background:#075648}
+.primary:disabled{cursor:wait;opacity:.7}
+.secondary{border:1px solid #ceded6;background:white;color:#235b4e;border-radius:9px;padding:10px 13px;font-weight:690;cursor:pointer}
+.secondary:hover{background:#f2f9f5}
+.full{width:100%}.actions{display:flex;gap:11px;margin-top:22px;align-items:center}
+.actions .primary{flex:1}
+.banks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.bank{padding:13px 14px;border:1px solid #e0eae4;border-radius:12px;min-height:119px}
+.bank-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.bank b{font-size:13px}.bank small{font-size:10px;color:#718b80}
+.bank input[type=file]{display:block;width:100%;font-size:11px;line-height:1.6;margin:9px 0 2px;color:#466b5f}
+.fileinfo{font-size:11px;color:#688376;line-height:1.5;max-height:36px;overflow:hidden}
+.note{border:1px solid #dce9e3;border-radius:11px;background:#f5faf7;color:#557064;padding:13px 15px;margin:20px 0 0;font-size:12px;line-height:1.65}
+.note b{color:#18584a}
+.status{margin-top:15px;font-size:12px;color:#416b5f;min-height:20px;line-height:1.5}
+.status.error{color:#a13b36}
+.summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:15px 0}
+.metric{border:1px solid #e0e9e3;border-radius:10px;padding:13px}
+.metric strong{display:block;color:#0d6353;font-size:23px}.metric small{font-size:11px;color:#6e8278}
+.source-list{display:grid;gap:8px;margin-top:11px}
+.source-item{display:grid;grid-template-columns:170px 1fr auto;align-items:start;gap:15px;padding:12px;border:1px solid #e1eae6;border-radius:10px;font-size:12px}
+.source-item strong{color:#184f44}.source-item small{font-size:11px;line-height:1.6;color:#647d72}
+.state{font-size:11px;background:#eff5f2;border-radius:20px;padding:5px 8px;white-space:nowrap}
+.state.warn{background:#fff2d7;color:#795d20}
+.state.ok{background:#e9f7ed;color:#267148}
+.divider{border:0;border-top:1px solid #e4ede7;margin:22px 0}
+.suggestions{display:grid;gap:9px}
+.suggestion{display:flex;align-items:flex-start;gap:9px;border:1px solid #ebeee8;padding:9px;border-radius:8px;font-size:12px;line-height:1.5}
+.suggestion input{accent-color:#0b6455;margin-top:3px}
+.manual-grid{display:grid;grid-template-columns:1.25fr 1.5fr 1fr 0.85fr auto;align-items:end;gap:10px}
+.manual-grid label{font-size:11px}
+.manual-grid select,.manual-grid input{width:100%;font-size:12px}
+.overrides{display:grid;gap:6px;margin-top:12px}
+.override{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#f4faf7;border:1px solid #dcebe3;border-radius:8px;padding:10px 12px;font-size:12px}
+.override button{border:0;background:transparent;color:#a04841;cursor:pointer}
+details{border:1px solid #e0e8e2;border-radius:11px;margin-top:19px;overflow:hidden}
+details summary{cursor:pointer;padding:14px;font-size:12px;font-weight:760}
+.detail-content{padding:14px;border-top:1px solid #e0e8e2}
+.hidden{display:none!important}
+.footer{color:#81948c;font-size:11px;margin:24px 0;line-height:1.7}
+.inline-link{color:#1c7160;word-break:break-all}
+@media(max-width:700px){
+ main{padding-top:25px}.panel{padding:19px 16px}.banks{grid-template-columns:1fr}
+ .group{grid-template-columns:1fr;gap:4px}.source-item{grid-template-columns:1fr}
+ .manual-grid{grid-template-columns:1fr 1fr}.manual-grid .wide{grid-column:span 2}
+ .actions{flex-direction:column-reverse}.actions button{width:100%}
+ .navNote{font-size:10px}
+}
+</style></head><body>
+<header><div class="container"><nav>
+<div class="brand"><div class="brandIcon">MTB</div><div>Peer Bank Rate Monitor<small>ALCO presentation generator</small></div></div>
+<div class="navNote">Public • No login • No saved reports</div>
+</nav></div></header>
+<main class="container">
+<h1>Create your ALCO presentation.</h1>
+<p class="desc">Upload official bank rate sheets or screenshots if available. Click <b>Proceed</b> to review the extracted rates, then click <b>Generate PPT</b> to download an editable PowerPoint.</p>
+<div class="stepper"><div class="step active" id="stepLabel1"><strong>1</strong> Upload sources</div><span class="step sep">›</span><div class="step" id="stepLabel2"><strong>2</strong> Review &amp; generate</div></div>
+<section class="panel" id="stepOne">
+<h2>Step 1 — Add official rate sources</h2>
+<p class="small">Files are optional: the system automatically checks official bank pages and PDFs as well. Upload screenshots to fill gaps where those sites are dynamic or blocked. You can upload more than one document for a bank.</p>
+<div class="group"><div><label for="asOf">Report as-of date</label><input id="asOf" type="date" required/></div><div class="small" style="margin:0">Use the latest eligible rate sheet that was effective on or before this date, even if it was published earlier. For example, an EBL sheet effective 1 November can be used on 18 November if still current.</div></div>
+<div class="banks" id="banks"></div>
+<div class="note"><b>Upload guidance:</b> Include the product name, tenor columns, interest rates and the document's effective date. PDF text and screenshot OCR are processed temporarily; the system does not retain files or presentations. Unclear extracted rates are flagged instead of guessed.</div>
+<div class="actions"><button class="primary full" id="proceed" onclick="proceed()"><span>Proceed — review rate data</span><span aria-hidden="true">→</span></button></div>
+<div class="status" id="stepOneStatus" role="status" aria-live="polite"></div>
 </section>
-<details><summary>Official rate sheet unavailable? Upload PDF or image (optional)</summary>
-<div class="option-body">
-<p>Upload a bank-issued PDF, JPG, or PNG if the official bank website blocks access. Files are processed temporarily for extracting evidence text, not saved. The report includes extracted rate-bearing text as <b>unverified candidates</b> until you check the official document.</p>
-<div class="flexline"><select id="uploadBank"><option value="MTB">Mutual Trust Bank</option><option value="EBL">Eastern Bank</option><option value="PRIME">Prime Bank</option><option value="BRAC">BRAC Bank</option><option value="DHAKA">Dhaka Bank</option><option value="CITY">City Bank</option><option value="UCB">United Commercial Bank</option></select><input id="uploadFile" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" aria-label="Select official bank rate sheet"/></div>
-<div style="margin-top:12px"><button id="uploadButton" onclick="addEvidence()" style="background:#eef6f2;border:1px solid #c8dfd4;border-radius:8px;padding:10px 14px;font-size:12px;font-weight:700;color:#0d6754">Add document to this report</button></div>
-<div class="upload-list" id="uploadList"></div>
-<p>For JPG/PNG, text recognition runs inside your browser. PDF text extraction runs temporarily on the server and is not archived.</p>
+<section class="panel hidden" id="stepTwo">
+<h2>Step 2 — Review and generate PowerPoint</h2>
+<p class="small">The latest eligible official rates have been collected. Review unresolved banks and any OCR suggestions, then generate the editable presentation. MTB Proposed Rate will remain blank.</p>
+<div class="summary" id="summary"></div>
+<h3>Bank source status</h3>
+<div class="source-list" id="sourceList"></div>
+<details id="suggestionPanel"><summary>Screenshot/PDF rate suggestions — confirm before including</summary><div class="detail-content"><p class="small">Only check figures you have verified against the original official document. OCR suggestions are not automatically treated as verified.</p><div class="suggestions" id="suggestions"></div></div></details>
+<details><summary>Manually fill unresolved rates from official evidence (optional)</summary>
+<div class="detail-content">
+<p class="small">For complex tables with deposit amount brackets or merged cells, enter the confirmed rate for the corresponding MTB product and offered tenor. The PPT will mark these as confirmed from your uploaded source, not as independently verified website values.</p>
+<div class="manual-grid">
+<div><label>Bank</label><select id="manualBank" onchange="refreshManual()"></select></div>
+<div><label>MTB product</label><select id="manualProduct" onchange="refreshTenors()"></select></div>
+<div><label>MTB tenor</label><select id="manualTenor"></select></div>
+<div><label>Rate (%)</label><input id="manualRate" inputmode="decimal" type="number" step="0.01" min="0" max="30" placeholder="8.50"/></div>
+<div><button class="secondary" onclick="addManual()">Add</button></div>
 </div>
-</details>
-<footer>MTB Peer Bank Deposit Rate Monitoring • Current official rates only • Files are created on demand and returned directly to you, without retaining report copies. <a href="https://github.com/AkibNizum/mtb-peer-rate-monitor" target="_blank" rel="noopener noreferrer">Open-source repository</a>.</footer>
+<div class="overrides" id="overrides"></div>
+</div></details>
+<div class="note"><b>Source controls:</b> Unverified rates stay blank; “–” means a confirmed unavailable tenor; Proposed Rate always remains empty. Rate-sheet dates and official URLs appear in the presentation's Source Documents slide and slide notes.</div>
+<div class="actions"><button class="secondary" onclick="back()">← Back to uploads</button><button class="primary" id="generate" onclick="generate()">Generate editable PPT <span aria-hidden="true">↓</span></button></div>
+<div class="status" id="stepTwoStatus" role="status" aria-live="polite"></div>
+</section>
+<div class="footer">MTB-first rate comparisons • FDR and DPS • Publicly accessible • Official sources only • No report history or server-side file storage. Screenshot OCR may be inaccurate on merged tables and must be checked before ALCO.</div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
 <script>
-const todayBD=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dhaka',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-const dateControl=document.getElementById('date');dateControl.value=todayBD();dateControl.max=todayBD();
-const evidence=[];
-const $=s=>document.getElementById(s);
-function message(s,bad=false){const e=$('status');e.textContent=s;e.classList.toggle('error',bad)}
-function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&#39;'}[c]))}
-function renderUploads(){
- $('uploadList').innerHTML=evidence.map((x,i)=>'<div class="item"><span><b>'+escapeHTML(x.bankId)+'</b> · '+escapeHTML(x.name)+' · '+(x.text?'Text extracted':'No machine-readable text')+'</span><button onclick="removeEvidence('+i+')">Remove</button></div>').join('');
+const BANKS=[['MTB','Mutual Trust Bank'],['EBL','Eastern Bank'],['PRIME','Prime Bank'],['BRAC','BRAC Bank'],['DHAKA','Dhaka Bank'],['CITY','City Bank'],['UCB','United Commercial Bank']];
+const PRODUCT_IDS=[['monthly-benefit','MTB Monthly Benefit Plan'],['quarterly-benefit','MTB Quarterly Benefit Plan'],['fdr-days','MTB FDR in Days'],['fixed-deposit','MTB Fixed Deposit'],['double-saver','MTB Double Saver'],['brick-by-brick','MTB Brick by Brick'],['angona-dps','MTB Angona DPS'],['lakhopoti','MTB Lakhopoti Plan'],['kotipati','MTB Kotipati Plan'],['millionaire','MTB Millionaire Plan'],['education-plan','MTB Education Plan'],['junior-flexi','MTB Junior Flexi DPS']];
+const $=id=>document.getElementById(id);
+const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&#39;'}[x]));
+const currentDhaka=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dhaka',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+$('asOf').value=currentDhaka();$('asOf').max=currentDhaka();
+let analysis=null,confirmed=new Map(),chosenFiles=[],working=false;
+$('banks').innerHTML=BANKS.map(([id,name])=>'<div class="bank"><div class="bank-head"><b>'+escapeHtml(name)+'</b><small>'+id+'</small></div><input type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" multiple data-bank="'+id+'" aria-label="Upload '+escapeHtml(name)+' official rate files"/><div class="fileinfo" id="file-'+id+'">No file selected — website extraction will still run</div></div>').join('');
+document.querySelectorAll('input[type=file][data-bank]').forEach(el=>el.addEventListener('change',()=>{
+ const id=el.dataset.bank,files=[...el.files];$('file-'+id).textContent=files.length?files.map(x=>x.name).join(', '):'No file selected — website extraction will still run';
+}));
+function msg(id,message,isError=false){$(id).textContent=message;$(id).classList.toggle('error',!!isError)}
+function setWorking(v){working=v;$('proceed').disabled=v;$('generate').disabled=v}
+async function readAttachment(file){
+ if(file.size>5_000_000)throw Error(file.name+' is over 5 MB. Crop the screenshot or compress the PDF.');
+ const name=file.name,mime=file.type||'';
+ if(/\.pdf$/i.test(name)||mime==='application/pdf'){
+  if(file.size>3_000_000)throw Error(name+' exceeds the 3 MB PDF processing limit.');
+  const response=await fetch('/api?action=extract',{method:'POST',headers:{'content-type':'application/pdf'},body:file});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw Error(result.error||'PDF extraction failed');
+  return {text:String(result.text||'').slice(0,23000),notice:result.notice||'',kind:'PDF'};
+ }
+ if(!/(\.png|\.jpe?g)$/i.test(name)&&!['image/png','image/jpeg'].includes(mime))throw Error(name+': unsupported file format');
+ if(!window.Tesseract)throw Error('Screenshot text recognition could not load. Check browser network or upload a text-based PDF.');
+ const result=await window.Tesseract.recognize(file,'eng');
+ return{text:String(result.data?.text||'').slice(0,23000),notice:'Screenshot read locally with OCR; check all recognized numbers.',kind:'Screenshot'};
 }
-function removeEvidence(i){evidence.splice(i,1);renderUploads()}
-async function addEvidence(){
- const file=$('uploadFile').files[0],bankId=$('uploadBank').value,button=$('uploadButton');
- if(!file){message('Choose a PDF, JPG or PNG file first.',true);return}
- if(file.size>3_000_000){message('The initial upload limit is 3 MB per file.',true);return}
- if(evidence.length>=7){message('A maximum of seven documents can be attached to one report.',true);return}
- button.disabled=true;message('Extracting text from '+file.name+'…');
+async function proceed(){
+ if(working)return;setWorking(true);
+ msg('stepOneStatus','Reading uploaded sources…');chosenFiles=[];confirmed.clear();
  try{
-  let text='';
-  if(file.type==='application/pdf'||file.name.toLowerCase().endsWith('.pdf')){
-   const r=await fetch('/api?action=extract',{method:'POST',headers:{'content-type':'application/pdf'},body:file});
-   const o=await r.json();if(!r.ok)throw Error(o.error||'PDF extraction failed');text=o.text||'';
-  }else{
-   if(!window.Tesseract)throw Error('Image text recognition library is unavailable. Try a PDF or refresh.');
-   const o=await window.Tesseract.recognize(file,'eng');text=o.data?.text||'';
+  const controls=[...document.querySelectorAll('input[type=file][data-bank]')];
+  let all=controls.flatMap(el=>[...el.files].map(file=>({bankId:el.dataset.bank,file})));
+  if(all.length>24)throw Error('Please upload a maximum of 24 files in one report.');
+  const uploads=[];
+  for(let i=0;i<all.length;i++){
+   const {bankId,file}=all[i];
+   msg('stepOneStatus','Reading '+(i+1)+' of '+all.length+': '+file.name+'…');
+   try{
+    const result=await readAttachment(file);
+    uploads.push({bankId,name:file.name,text:result.text});
+    chosenFiles.push({bankId,name:file.name,chars:result.text.length,notice:result.notice});
+   }catch(e){
+    chosenFiles.push({bankId,name:file.name,chars:0,notice:'Failed: '+e.message});
+   }
   }
-  evidence.push({bankId,name:file.name,text:String(text).slice(0,15000)});
-  renderUploads();$('uploadFile').value='';
-  message('Source added to this report only. It has not been saved to the website.');
- }catch(e){message(e.message||String(e),true)}
- finally{button.disabled=false}
+  msg('stepOneStatus','Checking official bank websites and selecting eligible rate sheets…');
+  const response=await fetch('/api?action=review',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({asOf:$('asOf').value,uploads}),cache:'no-store'});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw Error(data.error||'Source review failed');
+  analysis=data;
+  showReview();
+  $('stepOne').classList.add('hidden');$('stepTwo').classList.remove('hidden');
+  $('stepLabel1').classList.remove('active');$('stepLabel2').classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+ }catch(e){msg('stepOneStatus',e.message||String(e),true)}
+ finally{setWorking(false)}
+}
+function count(r,bank,status){return r.filter(x=>x.bankId===bank&&x.status===status).length}
+function showReview(){
+ const z=analysis.stats;
+ $('summary').innerHTML='<div class="metric"><strong>'+z.verified+'</strong><small>Matched official rates</small></div>'+
+  '<div class="metric"><strong>'+z.missing+'</strong><small>Unresolved rate cells</small></div>'+
+  '<div class="metric"><strong>'+z.uploadedFiles+'</strong><small>Uploaded source files</small></div>';
+ $('sourceList').innerHTML=BANKS.map(([id,name])=>{
+  const s=analysis.sources.find(x=>x.id===id)||{},files=chosenFiles.filter(x=>x.bankId===id);
+  const readable=['web_readable','pdf_extracted','pdf_extracted_fallback'].includes(s.status);
+  const date=s.documentDate||s.effectiveDate||'Date not established';
+  const link=s.documentUrl||s.url||'';
+  const v=count(analysis.rows,id,'verified'),missing=count(analysis.rows,id,'review');
+  const f=files.length?files.map(x=>escapeHtml(x.name)+(x.chars?' ('+x.chars+' text characters)':' — read failed')).join('; '):'No file supplied';
+  return '<div class="source-item"><div><strong>'+escapeHtml(name)+'</strong><br/><small>'+escapeHtml(f)+'</small></div><div><small>Effective date: '+escapeHtml(date)+' · '+v+' rates matched, '+missing+' unresolved<br/>'+escapeHtml(s.note||'')+'<br/><a class="inline-link" target="_blank" rel="noopener noreferrer" href="'+escapeHtml(link)+'">'+escapeHtml(link.slice(0,78))+'</a></small></div><div><span class="state '+(readable?'ok':'warn')+'">'+escapeHtml(readable?'Source reached':'Review needed')+'</span></div></div>';
+ }).join('');
+ const suggestions=analysis.suggestions||[];
+ $('suggestions').innerHTML=suggestions.length?suggestions.map((x,i)=>
+  '<label class="suggestion"><input type="checkbox" data-sug="'+i+'"/><span><b>'+escapeHtml(x.bankId)+'</b> · '+escapeHtml(PRODUCT_IDS.find(p=>p[0]===x.productId)?.[1]||x.productId)+' · '+escapeHtml(x.tenor)+' · <b>'+x.rate.toFixed(2)+'%</b><br/><small>'+escapeHtml(x.evidence||'')+' — '+escapeHtml(x.sourceName)+'</small></span></label>').join('')
+  :'<p class="small">No unambiguous same-line OCR matches. You can add rates manually below after reading your uploaded official documents.</p>';
+ $('manualBank').innerHTML=BANKS.map(([id,name])=>'<option value="'+id+'">'+escapeHtml(name)+'</option>').join('');
+ $('manualProduct').innerHTML=PRODUCT_IDS.map(([id,name])=>'<option value="'+id+'">'+escapeHtml(name)+'</option>').join('');
+ refreshTenors(); renderOverrides();
+ const issue=analysis.issues||[];
+ if(issue.length)msg('stepTwoStatus','Attention: '+issue.length+' uploaded document(s) require manual review. You may still download a PPT with unverified cells blank.');
+ else msg('stepTwoStatus','Review complete. You can generate the PowerPoint now.');
+}
+function refreshManual(){refreshTenors()}
+function refreshTenors(){
+ const p=$('manualProduct').value;
+ const tenors=[...new Set((analysis?.rows||[]).filter(r=>r.productId===p).map(r=>r.tenor))];
+ $('manualTenor').innerHTML=tenors.map(t=>'<option>'+escapeHtml(t)+'</option>').join('');
+}
+function addManual(){
+ if(!analysis){msg('stepTwoStatus','Click Proceed first.',true);return}
+ const bankId=$('manualBank').value,productId=$('manualProduct').value,tenor=$('manualTenor').value;
+ const raw=$('manualRate').value,rate=Number(raw);
+ if(!raw||!Number.isFinite(rate)||rate<0||rate>30){msg('stepTwoStatus','Enter a valid interest rate from 0 to 30%.',true);return}
+ if(!chosenFiles.some(x=>x.bankId===bankId&&x.chars>0)){
+  msg('stepTwoStatus','Please upload an official document for '+bankId+' before manually overriding its rate.',true);return
+ }
+ confirmed.set(productId+'|'+tenor+'|'+bankId,{bankId,productId,tenor,rate,evidence:'User verified from uploaded official document'});
+ $('manualRate').value='';renderOverrides();msg('stepTwoStatus','Confirmed rate included for this report only. No data has been saved.');
+}
+function renderOverrides(){
+ $('overrides').innerHTML=[...confirmed.values()].map(x=>'<div class="override"><span>'+escapeHtml(x.bankId)+' · '+escapeHtml(PRODUCT_IDS.find(p=>p[0]===x.productId)?.[1]||'')+' · '+escapeHtml(x.tenor)+' · <b>'+x.rate.toFixed(2)+'%</b></span><button onclick="removeOverride('+JSON.stringify(x.productId+'|'+x.tenor+'|'+x.bankId).replace(/"/g,'&quot;')+')">Remove</button></div>').join('');
+}
+function removeOverride(key){confirmed.delete(key);renderOverrides()}
+function back(){
+ $('stepTwo').classList.add('hidden');$('stepOne').classList.remove('hidden');
+ $('stepLabel1').classList.add('active');$('stepLabel2').classList.remove('active');
+ msg('stepOneStatus','You may change your uploads, then click Proceed again.');
+ window.scrollTo({top:0,behavior:'smooth'});
 }
 async function generate(){
- const button=$('download');
- if(button.disabled)return;
- button.disabled=true;
- button.querySelector('span').textContent='Preparing Excel…';
- message('Checking official bank sources and assembling your workbook…');
+ if(working||!analysis)return;
+ setWorking(true);msg('stepTwoStatus','Creating editable FDR and DPS PowerPoint…');
  try{
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),110000);
-  let r;
-  try{r=await fetch('/api?action=excel',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({scope:$('scope').value,asOf:$('date').value,uploads:evidence}),signal:controller.signal,cache:'no-store'})}
-  finally{clearTimeout(timer)}
-  if(!r.ok){const error=await r.json().catch(()=>({}));throw Error(error.error||'Report could not be generated (HTTP '+r.status+')')}
-  const blob=await r.blob();
-  if(blob.size<1000)throw Error('The Excel file was unexpectedly empty');
-  const name=(r.headers.get('content-disposition')||'').match(/filename="([^"]+)"/)?.[1]||'MTB_Peer_Deposit_Rates.xlsx';
-  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
-  message('Your Excel file has been downloaded. No report or uploaded evidence was saved.');
- }catch(e){message(e.name==='AbortError'?'The request timed out. Please try again.':(e.message||String(e)),true)}
- finally{button.disabled=false;button.querySelector('span').textContent='Generate & download Excel'}
+  const records=analysis.rows.map(r=>({...r,proposedRate:null}));
+  const byKey=new Map(records.map((r,i)=>[r.productId+'|'+r.tenor+'|'+r.bankId,i]));
+  for(const el of document.querySelectorAll('input[data-sug]:checked')){
+   const cand=analysis.suggestions[Number(el.dataset.sug)];
+   if(!cand)continue;
+   confirmed.set(cand.key,{...cand,evidence:'User-confirmed OCR match: '+cand.sourceName});
+  }
+  for(const value of confirmed.values()){
+   const index=byKey.get(value.productId+'|'+value.tenor+'|'+value.bankId);
+   if(index===undefined)continue;
+   records[index].rate=value.rate;records[index].status='uploaded_reviewed';
+   records[index].note=value.evidence;records[index].sourceUrl='Uploaded official document (reviewed by user)';
+  }
+  const response=await fetch('/api?action=ppt',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({asOf:analysis.asOf,records,sources:analysis.sources}),cache:'no-store'});
+  if(!response.ok){const e=await response.json().catch(()=>({}));throw Error(e.error||'PowerPoint generation failed (HTTP '+response.status+')')}
+  const blob=await response.blob();
+  if(blob.size<3000)throw Error('Generated PowerPoint file is unexpectedly empty.');
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='MTB_Peer_Bank_FDR_DPS_Rates_'+analysis.asOf+'.pptx';
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),15000);
+  msg('stepTwoStatus','PowerPoint downloaded. The website did not save any report or uploaded document.');
+ }catch(e){msg('stepTwoStatus',e.message||String(e),true)}
+ finally{setWorking(false)}
 }
-</script>
-</body></html>
+</script></body></html>
