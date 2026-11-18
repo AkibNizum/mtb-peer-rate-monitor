@@ -3,6 +3,7 @@ import * as cheerio from 'cheerio';
 import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 import {banks,products} from './catalog.js';
 import {collectBank,deriveRate} from './extractor.js';
+import {generatePowerPoint} from './presentation.js';
 
 export const config={api:{bodyParser:false}};
 const MAX_REQUEST=3_100_000;
@@ -307,14 +308,87 @@ async function extractPDF(req,res){
    notice:'PDF text extracted in memory. Proposed rates and unverified bank rates remain blank.'});
  }catch{return res.status(200).json({text:'',notice:'Scanned PDF has no machine-readable text. Please upload a JPG/PNG scan for browser OCR.'});}
 }
+
+function evidenceSuggestions(uploads,rows,asOf){
+ const suggested=[],issues=[];
+ const productName=(p,b)=>b==='MTB'?p.name:(p.peers[b]||'N/A');
+ const strip=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+ const rateOne=s=>{
+  const hits=[...String(s).matchAll(/(?<!\d)(\d{1,2}(?:\.\d{1,3})?)\s*%/g)].map(x=>Number(x[1])).filter(x=>x>=0&&x<=30);
+  return hits.length===1?hits[0]:null;
+ };
+ for(const up of uploads){
+  const text=String(up.text||'').replace(/\r/g,'');
+  const lines=text.split('\n').map(x=>x.trim()).filter(Boolean);
+  if(!lines.length){issues.push({bankId:up.bankId,name:up.name,issue:'No machine-readable text. Upload a clearer screenshot or enter rates manually.'});continue}
+  const bank=banks.find(b=>b.id===up.bankId);
+  if(!bank)continue;
+  const cand=[];
+  for(const p of products){
+   const peer=productName(p,bank.id);
+   if(peer==='N/A')continue;
+   const alias=strip(peer).split(' ').filter(Boolean).slice(0,3).join(' ');
+   if(alias.length<7)continue;
+   for(const tenor of p.tenors){
+    const expected=strip(tenor);
+    if(expected.length<3)continue;
+    for(const line of lines){
+     const one=rateOne(line),normalized=strip(line);
+     if(one===null||!normalized.includes(expected)||!normalized.includes(alias))continue;
+     const key=p.id+'|'+tenor+'|'+bank.id;
+     if(!cand.some(x=>x.key===key))cand.push({key,bankId:bank.id,productId:p.id,tenor,
+       rate:one,sourceName:up.name,evidence:line.slice(0,180)});
+    }
+   }
+  }
+  // OCR suggestions are never promoted automatically to "verified".
+  suggested.push(...cand);
+  if(!cand.length)issues.push({bankId:up.bankId,name:up.name,issue:'Document text extracted, but no unambiguous same-line product / tenor / rate match. Check the official sheet and add missing rates manually if needed.'});
+ }
+ return {suggestions:suggested.slice(0,110),issues};
+}
+async function analyzeReport(req,res){
+ const input=quoteJSON(await rawRequest(req,450_000)),asOf=String(input.asOf||todayDhaka());
+ if(!/^20\d{2}-\d{2}-\d{2}$/.test(asOf)||Number.isNaN(Date.parse(asOf))||asOf>todayDhaka())throw error('Invalid report as-of date');
+ const uploads=Array.isArray(input.uploads)?input.uploads.slice(0,24).map(x=>({
+  bankId:String(x.bankId||'').slice(0,16),name:String(x.name||'').slice(0,90),
+  text:String(x.text||'').slice(0,23000)
+ })).filter(x=>banks.some(b=>b.id===x.bankId)):[];
+ const sources=await Promise.all(banks.map(b=>collectBank(b,asOf)));
+ const rows=buildRows(products,sources,asOf);
+ const matches=evidenceSuggestions(uploads,rows,asOf);
+ const stats={verified:rows.filter(x=>x.status==='verified').length,
+  missing:rows.filter(x=>x.status==='review').length,
+  tenorMissing:rows.filter(x=>x.status==='tenor_na').length,
+  uploadedFiles:uploads.length,
+  screenshotSuggestions:matches.suggestions.length};
+ return res.status(200).json({asOf,rows,sources,stats,...matches,stateless:true});
+}
+async function downloadPpt(req,res){
+ const input=quoteJSON(await rawRequest(req,450_000));
+ const asOf=String(input.asOf||''),rows=input.records;
+ if(!/^20\d{2}-\d{2}-\d{2}$/.test(asOf)||asOf>todayDhaka())throw error('Invalid report date');
+ if(!Array.isArray(rows)||rows.length<50)throw error('Please click Proceed and review the data before generating PowerPoint');
+ const data=await generatePowerPoint({asOf,records:rows,sources:input.sources});
+ const file='MTB_Peer_Bank_FDR_DPS_Rates_'+asOf+'.pptx';
+ res.status(200);
+ res.setHeader('Cache-Control','no-store');
+ res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.presentationml.presentation');
+ res.setHeader('Content-Disposition','attachment; filename="'+file+'"');
+ res.setHeader('Content-Length',data.length);
+ return res.end(data);
+}
+
 export default async function handler(req,res){
  res.setHeader('Cache-Control','no-store');
  try{
   const action=String(req.query.action||'health').split('&')[0];
-  if(action==='health')return res.status(200).json({ok:true,stateless:true,archive:false,authRequired:false,version:'2.2'});
+  if(action==='health')return res.status(200).json({ok:true,stateless:true,archive:false,authRequired:false,version:'3.0'});
+  if(action==='review'&&req.method==='POST')return await analyzeReport(req,res);
+  if(action==='ppt'&&req.method==='POST')return await downloadPpt(req,res);
   if(action==='excel'&&req.method==='POST')return await buildExcel(req,res);
   if(action==='extract'&&req.method==='POST')return await extractPDF(req,res);
-  return res.status(404).json({error:'This version only supports Excel download; report history was removed.'});
+  return res.status(404).json({error:'Supported actions: review, ppt, excel and extract. Report history and report saving are disabled.'});
  }catch(e){
   console.error('Peer rate generation error:',String(e.message||e));
   if(!res.headersSent)return res.status(e.status||500).json({error:String(e.message||e)});
