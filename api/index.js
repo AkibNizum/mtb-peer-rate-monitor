@@ -237,7 +237,7 @@ function addSources(wb,report,uploads){
  for(const s of report.sources){
   const count=report.records.filter(r=>r.bankId===s.id&&r.status==='review').length;
   const up=uploads.filter(x=>x.bankId===s.id).map(x=>x.name).join('; ');
-  const row=ws.addRow([s.name,s.sourceType||'Unavailable',s.documentDate||s.effectiveDate||'Not established',s.publishedDate||'Not stated',
+  const row=ws.addRow([s.name,s.sourceType||'Unavailable',s.id==='MTB'?'Varies by product — see Rate Audit':s.documentDate||s.effectiveDate||'Not established',s.publishedDate||'Not stated',
    s.status,s.documentUrl||'No official PDF selected',s.url,count,up]);
   row.height=38;row.eachCell((c,n)=>cellValue(c,c.value,count?'review':'normal'));
   if(s.documentUrl)row.getCell(6).value={text:s.documentUrl,hyperlink:s.documentUrl};
