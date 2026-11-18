@@ -1,0 +1,14 @@
+{
+  "name": "mtb-peer-rate-monitor",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "dependencies": {
+    "exceljs": "4.4.0",
+    "cheerio": "1.0.0",
+    "pdf-parse": "1.1.1"
+  }
+}
