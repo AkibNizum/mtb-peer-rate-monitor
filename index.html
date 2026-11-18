@@ -179,11 +179,11 @@ details summary{cursor:pointer;padding:14px;font-size:12px;font-weight:760}
 
 </section>
 <section id="pdfTool" role="tabpanel" aria-labelledby="tabPdf" class="hidden">
-<h1>Turn screenshots into one PDF.</h1>
+<h1>Turn screenshots into a searchable PDF.</h1>
 <p class="desc">Paste screenshots directly using <b>Ctrl+V</b>, or drag and drop PNG/JPG images. Arrange the pages and click <b>Generate PDF</b>. No sign-in, uploads, OCR or report saving required.</p>
 <div class="panel">
 <h2>Screenshot → PDF</h2>
-<p class="small">Each screenshot becomes one page. Paste several screenshots one by one; they appear in the order you added them.</p>
+<p class="small">Each screenshot becomes a searchable PDF page. English OCR adds an extractable text layer; pasted screenshots remain visually unchanged.</p>
 <div id="pdfDropZone" class="pdfDropZone" tabindex="0" role="button" aria-label="Click here, then paste screenshots with Ctrl plus V">
 <div class="pdfDropIcon" aria-hidden="true">▧</div>
 <strong>Click here, then press Ctrl+V</strong>
@@ -201,7 +201,7 @@ details summary{cursor:pointer;padding:14px;font-size:12px;font-weight:760}
 <button type="button" id="pdfDownload" class="primary" disabled>Generate &amp; download PDF ↓</button>
 </div>
 <div id="pdfStatus" class="status" aria-live="polite" role="status">Paste or add screenshots to begin.</div>
-<div class="note"><b>Privacy:</b> Your screenshots are processed in your browser only. They are not uploaded or saved by this website. Text remains part of the image; it is not converted into editable PDF text.</div>
+<div class="note"><b>Privacy and extraction:</b> Your screenshots are processed in your browser only. The PDF keeps the screenshot image and adds a selectable OCR text layer. OCR can misread small tables, figures or Bangla writing; proofread extracted text before using it for ALCO.</div>
 </div>
 </section>
 
@@ -210,7 +210,7 @@ details summary{cursor:pointer;padding:14px;font-size:12px;font-weight:760}
 <p class="desc">Paste your notes, document text, or a copied webpage below. Click <b>Generate text PDF</b> to download the document. Nothing is uploaded, saved, or shared.</p>
 <div class="panel">
 <h2>Text → PDF</h2>
-<p class="small">Works with English and Bangla text. English text produces a searchable PDF; Bangla and other scripts are preserved visually for accurate reading.</p>
+<p class="small">Works with English and Bangla text. Both produce extractable PDFs. Unicode text is visually rendered with an additional invisible searchable text layer.</p>
 <div class="textPdfForm">
 <div><label for="textPdfTitle">Document title (optional)</label><input type="text" id="textPdfTitle" maxlength="150" placeholder="e.g. Bank Rate Notes"/></div>
 <div><label for="textPdfFileName">PDF filename</label><input type="text" id="textPdfFileName" maxlength="90" value="Text_Document" placeholder="Text_Document"/></div>
@@ -221,7 +221,7 @@ details summary{cursor:pointer;padding:14px;font-size:12px;font-weight:760}
 <div class="textPdfRow"><span class="textPdfCount" id="textPdfCount">0 characters</span><span class="small" style="margin:0">A4 pages • Auto wrapping and pagination</span></div>
 <div class="textPdfActions"><button type="button" id="textPdfGenerate" class="primary">Generate &amp; download text PDF ↓</button></div>
 <div class="status" id="textPdfStatus" role="status" aria-live="polite">Paste text and click Generate PDF.</div>
-<div class="note"><b>Private by design:</b> PDF creation runs entirely in your browser. Selectable English text remains text. Bangla and other Unicode scripts use visual rendering to avoid broken letters; those pages are not searchable.</div>
+<div class="note"><b>Private by design:</b> PDF creation runs entirely in your browser. Selectable English text remains text. Bangla and other Unicode scripts use visual rendering plus a Unicode extraction layer, so their words can be copied or searched in compatible PDF readers.</div>
 </div>
 </section>
 <div class="footer">MTB-first rate comparisons • FDR and DPS • PDF uploads only; no bank website searching • No report history or server-side file storage. OCR and complex rate-table mappings need human review before ALCO.</div>
