@@ -108,6 +108,23 @@ details summary{cursor:pointer;padding:14px;font-size:12px;font-weight:760}
 .pdfFileInput{max-width:100%;color:#527566;font-size:12px}
 @media(max-width:700px){.toolTabs{width:100%}.toolTab{flex:1;padding:11px 9px;font-size:12px}.pdfPreviews{grid-template-columns:1fr}.pdfDropZone{min-height:145px}.pdfFooterActions{flex-direction:column-reverse}.pdfFooterActions button{width:100%}}
 
+
+/* Paste text and create locally generated PDF documents */
+.textPdfForm{display:grid;grid-template-columns:1fr 1fr 145px;gap:13px;align-items:end}
+.textPdfForm label{font-size:12px;line-height:1.4}
+.textPdfForm input,.textPdfForm select{width:100%}
+.textPdfEditor{width:100%;min-height:345px;display:block;resize:vertical;font:14px/1.65 "Noto Sans Bengali","Segoe UI",Arial,sans-serif;border:1px solid #d0ded7;border-radius:11px;padding:17px 18px;background:#fff;color:#193c35;tab-size:4}
+.textPdfEditor:focus{outline:2px solid #93bdaf;outline-offset:1px}
+.textPdfRow{display:flex;justify-content:space-between;gap:16px;align-items:center;margin:12px 0 0}
+.textPdfCount{font-size:12px;color:#7c8d82}
+.textPdfActions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.textPdfActions .primary{min-width:240px}
+@media(max-width:700px){
+ .textPdfForm{grid-template-columns:1fr}
+ .textPdfActions .primary{width:100%}
+ .textPdfEditor{min-height:280px}
+}
+
 </style></head><body>
 <header><div class="container"><nav>
 <div class="brand"><div class="brandIcon">MTB</div><div>Peer Bank Rate Monitor<small>ALCO presentation generator</small></div></div>
@@ -118,6 +135,7 @@ details summary{cursor:pointer;padding:14px;font-size:12px;font-weight:760}
 <div class="toolTabs" role="tablist" aria-label="Choose generator">
 <button class="toolTab" type="button" id="tabPpt" role="tab" aria-controls="pptTool" aria-selected="true" onclick="changeTool('ppt')">ALCO Presentation</button>
 <button class="toolTab" type="button" id="tabPdf" role="tab" aria-controls="pdfTool" aria-selected="false" onclick="changeTool('pdf')">Screenshot → PDF</button>
+<button class="toolTab" type="button" id="tabTextPdf" role="tab" aria-controls="textPdfTool" aria-selected="false" onclick="changeTool('text')">Text → PDF</button>
 </div>
 <section id="pptTool" role="tabpanel" aria-labelledby="tabPpt">
 <h1>Create your ALCO presentation.</h1>
@@ -186,22 +204,45 @@ details summary{cursor:pointer;padding:14px;font-size:12px;font-weight:760}
 <div class="note"><b>Privacy:</b> Your screenshots are processed in your browser only. They are not uploaded or saved by this website. Text remains part of the image; it is not converted into editable PDF text.</div>
 </div>
 </section>
+
+<section id="textPdfTool" role="tabpanel" aria-labelledby="tabTextPdf" class="hidden">
+<h1>Turn pasted text into a PDF.</h1>
+<p class="desc">Paste your notes, document text, or a copied webpage below. Click <b>Generate text PDF</b> to download the document. Nothing is uploaded, saved, or shared.</p>
+<div class="panel">
+<h2>Text → PDF</h2>
+<p class="small">Works with English and Bangla text. English text produces a searchable PDF; Bangla and other scripts are preserved visually for accurate reading.</p>
+<div class="textPdfForm">
+<div><label for="textPdfTitle">Document title (optional)</label><input type="text" id="textPdfTitle" maxlength="150" placeholder="e.g. Bank Rate Notes"/></div>
+<div><label for="textPdfFileName">PDF filename</label><input type="text" id="textPdfFileName" maxlength="90" value="Text_Document" placeholder="Text_Document"/></div>
+<div><label for="textPdfSize">Text size</label><select id="textPdfSize"><option value="10">10 pt</option><option value="11" selected>11 pt</option><option value="12">12 pt</option><option value="14">14 pt</option><option value="16">16 pt</option></select></div>
+</div>
+<div style="margin-top:20px"><label for="textPdfBody">Paste your text</label>
+<textarea class="textPdfEditor" id="textPdfBody" maxlength="120000" placeholder="Paste your text here…"></textarea></div>
+<div class="textPdfRow"><span class="textPdfCount" id="textPdfCount">0 characters</span><span class="small" style="margin:0">A4 pages • Auto wrapping and pagination</span></div>
+<div class="textPdfActions"><button type="button" id="textPdfGenerate" class="primary">Generate &amp; download text PDF ↓</button></div>
+<div class="status" id="textPdfStatus" role="status" aria-live="polite">Paste text and click Generate PDF.</div>
+<div class="note"><b>Private by design:</b> PDF creation runs entirely in your browser. Selectable English text remains text. Bangla and other Unicode scripts use visual rendering to avoid broken letters; those pages are not searchable.</div>
+</div>
+</section>
 <div class="footer">MTB-first rate comparisons • FDR and DPS • PDF uploads only; no bank website searching • No report history or server-side file storage. OCR and complex rate-table mappings need human review before ALCO.</div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
 <script>
 
 function changeTool(tool,updateHash=true){
- const pdf=tool==='pdf';
- document.getElementById('pptTool').classList.toggle('hidden',pdf);
- document.getElementById('pdfTool').classList.toggle('hidden',!pdf);
- document.getElementById('tabPpt').setAttribute('aria-selected',String(!pdf));
- document.getElementById('tabPdf').setAttribute('aria-selected',String(pdf));
- document.title=pdf?'MTB | Screenshot to PDF Generator':'MTB | ALCO Peer Bank PowerPoint Generator';
- if(updateHash&&location.hash!=='#'+tool)history.replaceState(null,'','#'+tool);
- if(pdf)document.getElementById('pdfDropZone').focus({preventScroll:true});
+ const mode=['ppt','pdf','text'].includes(tool)?tool:'ppt';
+ for(const [name,panel,button] of [
+  ['ppt','pptTool','tabPpt'],['pdf','pdfTool','tabPdf'],['text','textPdfTool','tabTextPdf']
+ ]){
+  document.getElementById(panel).classList.toggle('hidden',mode!==name);
+  document.getElementById(button).setAttribute('aria-selected',String(mode===name));
+ }
+ document.title=mode==='pdf'?'MTB | Screenshot to PDF Generator':
+  mode==='text'?'MTB | Text to PDF Generator':'MTB | ALCO Peer Bank PowerPoint Generator';
+ if(updateHash&&location.hash!=='#'+mode)history.replaceState(null,'','#'+mode);
+ if(mode==='pdf')document.getElementById('pdfDropZone').focus({preventScroll:true});
 }
-window.addEventListener('hashchange',()=>changeTool(location.hash==='#pdf'?'pdf':'ppt',false));
+window.addEventListener('hashchange',()=>changeTool(location.hash.slice(1),false));
 
 const BANKS=[['MTB','Mutual Trust Bank'],['EBL','Eastern Bank'],['PRIME','Prime Bank'],['BRAC','BRAC Bank'],['DHAKA','Dhaka Bank'],['CITY','City Bank'],['UCB','United Commercial Bank']];
 const PRODUCT_IDS=[['monthly-benefit','MTB Monthly Benefit Plan'],['quarterly-benefit','MTB Quarterly Benefit Plan'],['fdr-days','MTB FDR in Days'],['fixed-deposit','MTB Fixed Deposit'],['double-saver','MTB Double Saver'],['brick-by-brick','MTB Brick by Brick'],['angona-dps','MTB Angona DPS'],['lakhopoti','MTB Lakhopoti Plan'],['kotipati','MTB Kotipati Plan'],['millionaire','MTB Millionaire Plan'],['education-plan','MTB Education Plan'],['junior-flexi','MTB Junior Flexi DPS']];
@@ -391,7 +432,8 @@ async function generate(){
  }catch(e){msg('stepTwoStatus',e.message||String(e),true)}
  finally{setWorking(false)}
 }
-changeTool(location.hash==='#pdf'?'pdf':'ppt',false);
+changeTool(location.hash.slice(1),false);
 </script>
 <script src="/pdf-generator.js" defer></script>
+<script src="/text-pdf.js" defer></script>
 </body></html>
