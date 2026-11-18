@@ -156,7 +156,7 @@ async function processTemplate(base64,kind,records,asOf){
     // text style, backgrounds or any slide assets.
     for(let c=1;c<cells.length;c++){
      const old=cellText($,cells[c]);
-     if(safeRateCell($,cells[c])&&(/(?:\d+(?:\.\d+)?\s*%)/.test(old)||old==='-'||old==='–'))replaceText($,cells[c],'');
+     if(safeRateCell($,cells[c])&&(/(?:\d+(?:\.\d+)?\s*%)/.test(old)||['-','–','%','N/A','NA','Not continuing'].includes(old)))replaceText($,cells[c],'');
     }
     if(safeRateCell($,cells[2]))replaceText($,cells[2],''); // MTB proposed always blank
     if(kind==='DPS'&&no===7&&safeRateCell($,cells[4]))replaceText($,cells[4],'');
