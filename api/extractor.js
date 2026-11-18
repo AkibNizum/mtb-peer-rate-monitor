@@ -141,6 +141,20 @@ export async function collectBank(bank,asOf){
  }catch(e){
   src.status=/HTTP 403|HTTP 406|HTTP 429/.test(String(e))?'access_blocked':'unavailable';
   src.note=String(e.message||e).slice(0,230);
+  // The official bank landing page can reject Vercel while the bank-issued PDF remains public.
+  if(bank.fallbackPdf){
+   src.alternatives=[{url:bank.fallbackPdf,score:10,date:dateFromUrl(bank.fallbackPdf)}];
+   const fallback=await getSheet(bank,src.alternatives,asOf).catch(()=>null);
+   if(fallback){
+    src.status='pdf_extracted_fallback';src.sourceType='Official bank PDF (landing page blocked)';
+    src.text=fallback.text;src.documentUrl=fallback.url;src.documentDate=fallback.effectiveDate;
+    src.effectiveDate=fallback.effectiveDate;
+    src.note='Landing page access error ('+String(e.message||e).slice(0,90)+'). Direct official PDF was downloaded and its effective date confirmed. Verify that the PDF is the latest published sheet.';
+   }else{
+    src.documentUrl=bank.fallbackPdf;
+    src.note+='; official PDF fallback could not be read or validated for selected date.';
+   }
+  }
  }
  return src;
 }
@@ -246,6 +260,6 @@ function parsePDF(src,p,tenor){
 export function deriveRate(src,product,bank,tenor,asOf){
  if(!src||src.status==='access_blocked'||src.status==='unavailable')return null;
  if(src.id==='MTB')return parseMTB(src,product,tenor,asOf);
- if(src.status==='pdf_extracted'&&src.documentDate<=asOf)return parsePDF(src,product,tenor);
+ if((src.status==='pdf_extracted'||src.status==='pdf_extracted_fallback')&&src.documentDate<=asOf)return parsePDF(src,product,tenor);
  return null;
 }
