@@ -1,0 +1,88 @@
+name: Build portable MTB ALCO Windows app
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'offline_app/source_payload.b64'
+      - '.github/workflows/build-offline-app.yml'
+permissions:
+  contents: write
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Restore offline Python app and the two original PowerPoint templates
+        shell: bash
+        run: |
+          python - <<'PY'
+          import base64,io,lzma,re,tarfile
+          from pathlib import Path
+          root=Path('offline_tool')
+          root.mkdir(exist_ok=True)
+          archive=lzma.decompress(base64.b64decode(Path('offline_app/source_payload.b64').read_text()))
+          with tarfile.open(fileobj=io.BytesIO(archive),mode='r') as tar:
+              for item in tar.getmembers():
+                  if '..' in Path(item.name).parts or item.name.startswith('/'):raise ValueError('Unsafe archive path')
+              tar.extractall(root)
+          (root/'templates').mkdir(exist_ok=True)
+          for part,constant,filename in [('fdr','FDR_TEMPLATE','MTB_FDR_original.pptx'),('dps','DPS_TEMPLATE','MTB_DPS_original.pptx')]:
+              js=Path('api/templates/'+part+'.js').read_text(encoding='utf-8')
+              match=re.search(r'export const '+constant+r'\s*=\s*"([^"]+)"',js)
+              if not match:raise RuntimeError('Cannot restore original '+part+' deck')
+              (root/'templates'/filename).write_bytes(base64.b64decode(match.group(1)))
+          print([(p.name,p.stat().st_size) for p in (root/'templates').iterdir()])
+          PY
+      - name: Install Python libraries and PyInstaller
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r offline_tool/requirements.txt pyinstaller
+      - name: Install offline OCR binaries
+        shell: pwsh
+        run: |
+          choco install tesseract -y --no-progress --limit-output
+          $t = "C:\Program Files\Tesseract-OCR"
+          if (-not (Test-Path "$t\tesseract.exe")) { $t = "C:\Program Files (x86)\Tesseract-OCR" }
+          if (-not (Test-Path "$t\tesseract.exe")) { throw "OCR binary not installed" }
+          if (-not (Test-Path "$t\tessdata\eng.traineddata")) { throw "English OCR data missing" }
+      - name: Verify report engine on Windows
+        shell: pwsh
+        working-directory: offline_tool
+        run: |
+          python -c "from engine import validate_templates,new_config,build_targets; print(validate_templates(),len(build_targets(new_config())))"
+          python -c "from pdf_tools import text_to_extractable_pdf; text_to_extractable_pdf('Fixed Deposit 1 Year 8.25%', 'Bank Rates', 'test.pdf'); import fitz; print(fitz.open('test.pdf')[0].get_text())"
+      - name: Build Windows desktop app
+        shell: pwsh
+        working-directory: offline_tool
+        run: |
+          python -m PyInstaller --noconfirm --clean --windowed --onedir --name MTB_ALCO_Tool --add-data "templates;templates" --collect-all fitz --collect-all pymupdf app.py
+          $t = "C:\Program Files\Tesseract-OCR"
+          if (-not (Test-Path "$t\tesseract.exe")) { $t = "C:\Program Files (x86)\Tesseract-OCR" }
+          Copy-Item -Path $t -Destination "dist\MTB_ALCO_Tool\_internal\tesseract" -Recurse -Force
+          Copy-Item README_START_HERE.txt "dist\MTB_ALCO_Tool\README_START_HERE.txt"
+          if (-not (Test-Path "dist\MTB_ALCO_Tool\MTB_ALCO_Tool.exe")) { throw "Missing executable" }
+          if (-not (Test-Path "dist\MTB_ALCO_Tool\_internal\tesseract\tesseract.exe")) { throw "OCR not bundled" }
+          if (-not (Test-Path "dist\MTB_ALCO_Tool\_internal\templates\MTB_FDR_original.pptx")) { throw "FDR template not bundled" }
+          if (-not (Test-Path "dist\MTB_ALCO_Tool\_internal\templates\MTB_DPS_original.pptx")) { throw "DPS template not bundled" }
+      - name: Create shareable ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "offline_tool\dist\MTB_ALCO_Tool" -DestinationPath "MTB_ALCO_Offline_Windows_v1.zip" -Force -CompressionLevel Optimal
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MTB_ALCO_Offline_Windows_v1
+          path: MTB_ALCO_Offline_Windows_v1.zip
+          retention-days: 90
+      - name: Publish portable app for public download
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: offline-v1.0.0
+          name: MTB ALCO Offline Desktop Tool v1.0.0
+          files: MTB_ALCO_Offline_Windows_v1.zip
+          fail_on_unmatched_files: true
+          body: Portable, internet-free Windows application. Extract the full ZIP and run MTB_ALCO_Tool.exe. Original FDR/DPS PowerPoints and English offline OCR included.
