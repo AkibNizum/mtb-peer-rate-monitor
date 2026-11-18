@@ -148,7 +148,14 @@ async function readAttachment(file){
   return {text:String(result.text||'').slice(0,23000),notice:result.notice||'',kind:'PDF'};
  }
  if(!/(\.png|\.jpe?g)$/i.test(name)&&!['image/png','image/jpeg'].includes(mime))throw Error(name+': unsupported file format');
- if(!window.Tesseract)throw Error('Screenshot text recognition could not load. Check browser network or upload a text-based PDF.');
+ if(!window.Tesseract){
+  await new Promise((resolve,reject)=>{
+   const js=document.createElement('script');
+   js.src='https://unpkg.com/tesseract.js@5/dist/tesseract.min.js';
+   js.onload=resolve;js.onerror=()=>reject(Error('Screenshot OCR could not load from either provider. Try a text-based PDF or a different network.'));
+   document.head.appendChild(js);
+  });
+ }
  const result=await window.Tesseract.recognize(file,'eng');
  return{text:String(result.data?.text||'').slice(0,23000),notice:'Screenshot read locally with OCR; check all recognized numbers.',kind:'Screenshot'};
 }
