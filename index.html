@@ -121,27 +121,27 @@ details summary{cursor:pointer;padding:14px;font-size:12px;font-weight:760}
 </div>
 <section id="pptTool" role="tabpanel" aria-labelledby="tabPpt">
 <h1>Create your ALCO presentation.</h1>
-<p class="desc">Upload official bank rate sheets or screenshots if available. Click <b>Proceed</b> to review the extracted rates, then click <b>Generate PPT</b> to download an editable PowerPoint.</p>
+<p class="desc">Upload bank rate-sheet PDFs. Click <b>Proceed</b> to review the data extracted <b>only from your PDFs</b>, then click <b>Generate PPT</b> to download the original-format PowerPoint files.</p>
 <div class="stepper"><div class="step active" id="stepLabel1"><strong>1</strong> Upload sources</div><span class="step sep">›</span><div class="step" id="stepLabel2"><strong>2</strong> Review &amp; generate</div></div>
 <section class="panel" id="stepOne">
-<h2>Step 1 — Add official rate sources</h2>
-<p class="small">Files are optional: the system automatically checks official bank pages and PDFs as well. Upload screenshots to fill gaps where those sites are dynamic or blocked. You can upload more than one document for a bank.</p>
-<div class="group"><div><label for="asOf">Report as-of date</label><input id="asOf" type="date" required/></div><div class="small" style="margin:0">Use the latest eligible rate sheet that was effective on or before this date, even if it was published earlier. For example, an EBL sheet effective 1 November can be used on 18 November if still current.</div></div>
+<h2>Step 1 — Upload bank PDFs</h2>
+<p class="small">The system does <b>not</b> search bank websites or reuse old rates. Upload one or more official rate-sheet PDFs per bank. Without a PDF, that bank's rate cells will show <b>-</b>. Need to use screenshots? Convert them to a PDF using the separate Screenshot → PDF tab.</p>
+<div class="group"><div><label for="asOf">Report as-of date</label><input id="asOf" type="date" required/></div><div class="small" style="margin:0">Only the PDFs you provide will be considered. A document with an effective date after the selected report date will not be used.</div></div>
 <div class="banks" id="banks"></div>
-<div class="note"><b>Upload guidance:</b> Include the product name, tenor columns, interest rates and the document's effective date. PDF text and screenshot OCR are processed temporarily; the system does not retain files or presentations. Unclear extracted rates are flagged instead of guessed.</div>
+<div class="note"><b>Upload guidance:</b> Provide bank-issued PDFs showing product names, tenors, amount brackets and effective dates. If a PDF is scanned, the page will try OCR. A rate not established from the supplied PDF is shown as <b>-</b>, without guessing. Proposed Rate stays blank. Uploaded files and presentations are not saved.</div>
 <div class="actions"><button class="primary full" id="proceed" onclick="proceed()"><span>Proceed — review rate data</span><span aria-hidden="true">→</span></button></div>
 <div class="status" id="stepOneStatus" role="status" aria-live="polite"></div>
 </section>
 <section class="panel hidden" id="stepTwo">
 <h2>Step 2 — Review and generate PowerPoint</h2>
-<p class="small">The latest eligible official rates have been collected. Review unresolved banks and any OCR suggestions, then generate the editable presentation. MTB Proposed Rate will remain blank.</p>
+<p class="small">Only the supplied PDFs have been processed. Review extracted-rate suggestions if needed, then download the editable original-format presentations. Missing or unreadable rates show <b>-</b>; Proposed Rate remains blank.</p>
 <div class="summary" id="summary"></div>
 <h3>Bank source status</h3>
 <div class="source-list" id="sourceList"></div>
-<details id="suggestionPanel"><summary>Screenshot/PDF rate suggestions — confirm before including</summary><div class="detail-content"><p class="small">Only check figures you have verified against the original official document. OCR suggestions are not automatically treated as verified.</p><div class="suggestions" id="suggestions"></div></div></details>
-<details><summary>Manually fill unresolved rates from official evidence (optional)</summary>
+<details id="suggestionPanel"><summary>Extracted PDF rate suggestions — confirm before including</summary><div class="detail-content"><p class="small">Only select figures that you can verify in your uploaded PDF. OCR text is not automatically treated as verified.</p><div class="suggestions" id="suggestions"></div></div></details>
+<details><summary>Manually confirm unresolved PDF rates (optional)</summary>
 <div class="detail-content">
-<p class="small">For complex tables with deposit amount brackets or merged cells, enter the confirmed rate for the corresponding MTB product and offered tenor. The PPT will mark these as confirmed from your uploaded source, not as independently verified website values.</p>
+<p class="small">For complex PDF tables, enter the confirmed rate against the equivalent MTB product and tenor. Enter only an actual comparable peer product from the PDF.</p>
 <div class="manual-grid">
 <div><label>Bank</label><select id="manualBank" onchange="refreshManual()"></select></div>
 <div><label>MTB product</label><select id="manualProduct" onchange="refreshTenors()"></select></div>
@@ -154,7 +154,7 @@ details summary{cursor:pointer;padding:14px;font-size:12px;font-weight:760}
 
 <div class="note"><b>Exact MTB templates installed:</b> Your original 11-slide FDR and 7-slide DPS PowerPoint files are built into this generator. No template upload is needed; slides, logos, table geometry, fonts, colors, and spacing are preserved.</div>
 
-<div class="note"><b>Source controls:</b> Unverified rates stay blank; “–” means a confirmed unavailable tenor; Proposed Rate always remains empty. Rate-sheet dates and official URLs appear in the presentation's Source Documents slide and slide notes.</div>
+<div class="note"><b>Source controls:</b> A dash (–) means no rate could be established from the supplied PDF, not necessarily that the bank does not offer it. Proposed Rate always stays blank. Uploaded PDF filenames and effective dates are included with the original-format presentations.</div>
 <div class="actions"><button class="secondary" onclick="back()">← Back to uploads</button><button class="primary" id="generate" onclick="generate()">Generate original-format PPTs <span aria-hidden="true">↓</span></button></div>
 <div class="status" id="stepTwoStatus" role="status" aria-live="polite"></div>
 </section>
@@ -186,7 +186,7 @@ details summary{cursor:pointer;padding:14px;font-size:12px;font-weight:760}
 <div class="note"><b>Privacy:</b> Your screenshots are processed in your browser only. They are not uploaded or saved by this website. Text remains part of the image; it is not converted into editable PDF text.</div>
 </div>
 </section>
-<div class="footer">MTB-first rate comparisons • FDR and DPS • Publicly accessible • Official sources only • No report history or server-side file storage. Screenshot OCR may be inaccurate on merged tables and must be checked before ALCO.</div>
+<div class="footer">MTB-first rate comparisons • FDR and DPS • PDF uploads only; no bank website searching • No report history or server-side file storage. OCR and complex rate-table mappings need human review before ALCO.</div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
 <script>
@@ -210,33 +210,73 @@ const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;'
 const currentDhaka=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dhaka',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 $('asOf').value=currentDhaka();$('asOf').max=currentDhaka();
 let analysis=null,confirmed=new Map(),chosenFiles=[],working=false;
-$('banks').innerHTML=BANKS.map(([id,name])=>'<div class="bank"><div class="bank-head"><b>'+escapeHtml(name)+'</b><small>'+id+'</small></div><input type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" multiple data-bank="'+id+'" aria-label="Upload '+escapeHtml(name)+' official rate files"/><div class="fileinfo" id="file-'+id+'">No file selected — website extraction will still run</div></div>').join('');
+$('banks').innerHTML=BANKS.map(([id,name])=>'<div class="bank"><div class="bank-head"><b>'+escapeHtml(name)+'</b><small>'+id+'</small></div><input type="file" accept=".pdf,application/pdf" multiple data-bank="'+id+'" aria-label="Upload '+escapeHtml(name)+' official rate files"/><div class="fileinfo" id="file-'+id+'">No PDF selected — rates for this bank will be marked -</div></div>').join('');
 document.querySelectorAll('input[type=file][data-bank]').forEach(el=>el.addEventListener('change',()=>{
- const id=el.dataset.bank,files=[...el.files];$('file-'+id).textContent=files.length?files.map(x=>x.name).join(', '):'No file selected — website extraction will still run';
+ const id=el.dataset.bank,files=[...el.files];$('file-'+id).textContent=files.length?files.map(x=>x.name).join(', '):'No PDF selected — rates for this bank will be marked -';
 }));
 function msg(id,message,isError=false){$(id).textContent=message;$(id).classList.toggle('error',!!isError)}
 function setWorking(v){working=v;$('proceed').disabled=v;$('generate').disabled=v}
+async function loadOcrLibrary(){
+ if(window.Tesseract)return window.Tesseract;
+ await new Promise((resolve,reject)=>{
+  const js=document.createElement('script');
+  js.src='https://unpkg.com/tesseract.js@5/dist/tesseract.min.js';
+  js.onload=resolve;js.onerror=()=>reject(Error('OCR library is unavailable. You can still enter a rate manually after reviewing your PDF.'));
+  document.head.appendChild(js);
+ });
+ return window.Tesseract;
+}
+async function readScannedPDF(file){
+ // This runs on the user's device. No scanned PDF is sent to any bank website.
+ let pdfjs;
+ try{pdfjs=await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs')}
+ catch{
+  pdfjs=await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.mjs');
+ }
+ pdfjs.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
+ const tesseract=await loadOcrLibrary();
+ const buffer=new Uint8Array(await file.arrayBuffer());
+ const document=await pdfjs.getDocument({data:buffer}).promise;
+ const limit=Math.min(12,document.numPages);
+ let joined='';
+ for(let pageNo=1;pageNo<=limit;pageNo++){
+  msg('stepOneStatus','Reading scanned PDF '+file.name+': page '+pageNo+'/'+limit+'…');
+  const page=await document.getPage(pageNo);
+  const viewport=page.getViewport({scale:1.55});
+  const factor=Math.min(1,2000/Math.max(viewport.width,viewport.height));
+  const finalView=page.getViewport({scale:1.55*factor});
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.ceil(finalView.width);canvas.height=Math.ceil(finalView.height);
+  const ctx=canvas.getContext('2d',{alpha:false});
+  if(!ctx)throw Error('Cannot render scanned PDF pages on this browser.');
+  await page.render({canvasContext:ctx,viewport:finalView}).promise;
+  const recognized=await tesseract.recognize(canvas,'eng');
+  joined+='\n--- PDF page '+pageNo+' ---\n'+String(recognized.data?.text||'');
+  canvas.width=0;canvas.height=0;
+ }
+ await document.destroy();
+ return {text:joined,notice:document.numPages>limit?
+  'OCR extracted only the first '+limit+' of '+document.numPages+' PDF pages; remaining pages require manual checking.':
+  'Image-only PDF was read by OCR in the browser. Confirm all extracted rates and amount brackets.'};
+}
 async function readAttachment(file){
- if(file.size>5_000_000)throw Error(file.name+' is over 5 MB. Crop the screenshot or compress the PDF.');
+ if(file.size>7_000_000)throw Error(file.name+' exceeds the 7 MB PDF upload limit.');
  const name=file.name,mime=file.type||'';
- if(/\.pdf$/i.test(name)||mime==='application/pdf'){
-  if(file.size>3_000_000)throw Error(name+' exceeds the 3 MB PDF processing limit.');
-  const response=await fetch('/api?action=extract',{method:'POST',headers:{'content-type':'application/pdf'},body:file});
-  const result=await response.json().catch(()=>({}));
-  if(!response.ok)throw Error(result.error||'PDF extraction failed');
-  return {text:String(result.text||'').slice(0,23000),notice:result.notice||'',kind:'PDF'};
+ if(!/\.pdf$/i.test(name)&&mime!=='application/pdf')throw Error('Only PDF files can be used as ALCO data sources. Use Screenshot → PDF to convert images first.');
+ if(file.size>3_000_000)throw Error(file.name+' exceeds the 3 MB temporary PDF text-extraction limit. Compress or split the PDF.');
+ const response=await fetch('/api?action=extract',{method:'POST',headers:{'content-type':'application/pdf'},body:file});
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok)throw Error(result.error||'PDF extraction failed');
+ let text=String(result.text||''),notice=result.notice||'PDF text extracted';
+ if(text.trim().length<90){
+  try{
+   const ocr=await readScannedPDF(file);
+   text=ocr.text;notice=ocr.notice;
+  }catch(e){
+   notice='Image-only PDF OCR unavailable: '+(e.message||String(e));
+  }
  }
- if(!/(\.png|\.jpe?g)$/i.test(name)&&!['image/png','image/jpeg'].includes(mime))throw Error(name+': unsupported file format');
- if(!window.Tesseract){
-  await new Promise((resolve,reject)=>{
-   const js=document.createElement('script');
-   js.src='https://unpkg.com/tesseract.js@5/dist/tesseract.min.js';
-   js.onload=resolve;js.onerror=()=>reject(Error('Screenshot OCR could not load from either provider. Try a text-based PDF or a different network.'));
-   document.head.appendChild(js);
-  });
- }
- const result=await window.Tesseract.recognize(file,'eng');
- return{text:String(result.data?.text||'').slice(0,23000),notice:'Screenshot read locally with OCR; check all recognized numbers.',kind:'Screenshot'};
+ return {text:text.slice(0,30000),notice,kind:'PDF'};
 }
 async function proceed(){
  if(working)return;setWorking(true);
@@ -257,7 +297,7 @@ async function proceed(){
     chosenFiles.push({bankId,name:file.name,chars:0,notice:'Failed: '+e.message});
    }
   }
-  msg('stepOneStatus','Checking official bank websites and selecting eligible rate sheets…');
+  msg('stepOneStatus','Extracting rates from the PDFs you supplied — no website lookups…');
   const response=await fetch('/api?action=review',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({asOf:$('asOf').value,uploads}),cache:'no-store'});
   const data=await response.json().catch(()=>({}));
   if(!response.ok)throw Error(data.error||'Source review failed');
@@ -272,17 +312,17 @@ async function proceed(){
 function count(r,bank,status){return r.filter(x=>x.bankId===bank&&x.status===status).length}
 function showReview(){
  const z=analysis.stats;
- $('summary').innerHTML='<div class="metric"><strong>'+z.verified+'</strong><small>Matched official rates</small></div>'+
-  '<div class="metric"><strong>'+z.missing+'</strong><small>Unresolved rate cells</small></div>'+
-  '<div class="metric"><strong>'+z.uploadedFiles+'</strong><small>Uploaded source files</small></div>';
+ $('summary').innerHTML='<div class="metric"><strong>'+z.verified+'</strong><small>Rates matched from PDFs</small></div>'+
+  '<div class="metric"><strong>'+z.missing+'</strong><small>Rate cells marked -</small></div>'+
+  '<div class="metric"><strong>'+z.uploadedFiles+'</strong><small>Provided PDFs</small></div>';
  $('sourceList').innerHTML=BANKS.map(([id,name])=>{
   const s=analysis.sources.find(x=>x.id===id)||{},files=chosenFiles.filter(x=>x.bankId===id);
-  const readable=['web_readable','pdf_extracted','pdf_extracted_fallback'].includes(s.status);
+  const readable=s.status==='uploaded_pdf'||s.status==='uploaded_pdf_undated';
   const date=s.documentDate||s.effectiveDate||'Date not established';
-  const link=s.documentUrl||s.url||'';
-  const v=count(analysis.rows,id,'verified'),missing=count(analysis.rows,id,'review');
-  const f=files.length?files.map(x=>escapeHtml(x.name)+(x.chars?' ('+x.chars+' text characters)':' — read failed')).join('; '):'No file supplied';
-  return '<div class="source-item"><div><strong>'+escapeHtml(name)+'</strong><br/><small>'+escapeHtml(f)+'</small></div><div><small>Effective date: '+escapeHtml(date)+' · '+v+' rates matched, '+missing+' unresolved<br/>'+escapeHtml(s.note||'')+'<br/><a class="inline-link" target="_blank" rel="noopener noreferrer" href="'+escapeHtml(link)+'">'+escapeHtml(link.slice(0,78))+'</a></small></div><div><span class="state '+(readable?'ok':'warn')+'">'+escapeHtml(readable?'Source reached':'Review needed')+'</span></div></div>';
+  const link='';
+  const v=count(analysis.rows,id,'verified'),missing=count(analysis.rows,id,'pdf_missing');
+  const f=files.length?files.map(x=>escapeHtml(x.name)+(x.chars?' ('+x.chars+' text characters)':' — no readable text')+(x.notice?' · '+escapeHtml(x.notice):'')).join('; '):'No PDF supplied';
+  return '<div class="source-item"><div><strong>'+escapeHtml(name)+'</strong><br/><small>'+escapeHtml(f)+'</small></div><div><small>Effective date: '+escapeHtml(date)+' · '+v+' rates matched, '+missing+' unresolved<br/>'+escapeHtml(s.note||'')+'</small></div><div><span class="state '+(readable?'ok':'warn')+'">'+escapeHtml(readable?'PDF text available':'PDF review needed')+'</span></div></div>';
  }).join('');
  const suggestions=analysis.suggestions||[];
  $('suggestions').innerHTML=suggestions.length?suggestions.map((x,i)=>
@@ -292,8 +332,8 @@ function showReview(){
  $('manualProduct').innerHTML=PRODUCT_IDS.map(([id,name])=>'<option value="'+id+'">'+escapeHtml(name)+'</option>').join('');
  refreshTenors(); renderOverrides();
  const issue=analysis.issues||[];
- if(issue.length)msg('stepTwoStatus','Attention: '+issue.length+' uploaded document(s) require manual review. You may still download a PPT with unverified cells blank.');
- else msg('stepTwoStatus','Review complete. You can generate the PowerPoint now.');
+ if(issue.length)msg('stepTwoStatus','Attention: '+issue.length+' PDF(s) require manual review. The PPT will mark unsupported rates with -.');
+ else msg('stepTwoStatus','PDF-only review complete. Click Generate PPT to download original-format presentations; unsupported rates will appear as -.');
 }
 function refreshManual(){refreshTenors()}
 function refreshTenors(){
@@ -307,7 +347,7 @@ function addManual(){
  const raw=$('manualRate').value,rate=Number(raw);
  if(!raw||!Number.isFinite(rate)||rate<0||rate>30){msg('stepTwoStatus','Enter a valid interest rate from 0 to 30%.',true);return}
  if(!chosenFiles.some(x=>x.bankId===bankId&&x.chars>0)){
-  msg('stepTwoStatus','Please upload an official document for '+bankId+' before manually overriding its rate.',true);return
+  msg('stepTwoStatus','Please upload a bank-issued PDF for '+bankId+' before confirming its rate.',true);return
  }
  confirmed.set(productId+'|'+tenor+'|'+bankId,{bankId,productId,tenor,rate,evidence:'User verified from uploaded official document'});
  $('manualRate').value='';renderOverrides();msg('stepTwoStatus','Confirmed rate included for this report only. No data has been saved.');
