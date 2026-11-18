@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import * as cheerio from 'cheerio';
 import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 import {banks,products} from './catalog.js';
+import {collectBank,deriveRate} from './extractor.js';
 
 export const config={api:{bodyParser:false}};
 const MAX_REQUEST=3_100_000;
@@ -139,20 +140,20 @@ function detectRate(src,peer,tenor,date){
 }
 function buildRows(selectedProducts,sources,asOf){
  const by=Object.fromEntries(sources.map(s=>[s.id,s])),records=[];
- for(const p of selectedProducts)for(const t of p.tenors)for(const bank of banks){
+ for(const p of selectedProducts)for(const tenor of p.tenors)for(const bank of banks){
   const peer=bank.id==='MTB'?p.name:(p.peers[bank.id]||'N/A');
-  let rate=null,status='review',note='Current official rate not independently verified';
-  if(peer==='N/A'){status='product_na';note='No comparable product in reference mapping';}
-  else{
-   rate=detectRate(by[bank.id],peer,t,asOf);
-   if(rate!==null){status='verified';note='Unique matching official HTML table row with rate effective date';}
-  }
-  records.push({category:p.type,productId:p.id,product:p.name,tenor:t,
-   bankId:bank.id,peerProduct:peer,rate,status,note,sourceUrl:by[bank.id]?.documentUrl||bank.url,
-   effectiveDate:by[bank.id]?.effectiveDate||'',proposedRate:null});
+  const src=by[bank.id],result=peer==='N/A'?null:deriveRate(src,p,bank,tenor,asOf);
+  const status=peer==='N/A'?'product_na':result?.rate!==null&&result?.rate!==undefined?'verified':'review';
+  const note=peer==='N/A'?'No comparable peer product in current comparison map'
+   :result?.note||src?.note||'No verified current rate for this exact product and tenor';
+  records.push({category:p.type,productId:p.id,product:p.name,tenor,
+    bankId:bank.id,peerProduct:peer,rate:status==='verified'?result.rate:null,status,note,
+    sourceUrl:result?.sourceUrl||src?.documentUrl||src?.url||bank.url,
+    effectiveDate:result?.effectiveDate||src?.documentDate||'',proposedRate:null});
  }
  return records;
 }
+
 function textStyle(cell,fill='FFFFFF',color='1D4540',bold=false){
  cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+fill}};
  cell.font={name:'Aptos',size:10,bold,color:{argb:'FF'+color}};
@@ -174,11 +175,12 @@ function addWorkbookOverview(wb,report){
  const s=wb.addWorksheet('Read Me');
  s.columns=[{width:24},{width:83}];s.mergeCells('A1:B1');s.getCell('A1').value='MTB | Peer Deposit Rate Report';
  s.getCell('A1').font={name:'Aptos Display',size:20,bold:true,color:{argb:'FF0B554A'}};
- const info=[['Generated',report.asOf+' (Asia/Dhaka)'],['Source policy','Official bank websites only; upload text marked as unverified'],
+ const info=[['As of report date',report.asOf+' (Asia/Dhaka)'],['Source policy','Latest available official rate sheet effective ON or BEFORE report as-of date; upload text marked unverified'],
  ['Reference bank','Mutual Trust Bank PLC'],['Proposed Rate','ALWAYS BLANK — for ALCO confirmation'],
  ['N/A','Peer has no comparable product in candidate mapping'],['-','Peer offers comparable product but verified MTB tenor unavailable'],
  ['Blank rate','No sufficiently verified current official rate; requires review'],
- ['Storage','Report was generated in memory and downloaded; the website does NOT archive reports'],
+ ['Storage','Generated in memory and downloaded; no server report archive'],
+ ['Publication vs. effective date','An effective date is not necessarily the publication/upload date. We only label dates supported by the official document.'],
  ['Important','Before ALCO, verify every highlighted/blank rate and effective date against the cited original bank publication']];
  for(let i=0;i<info.length;i++){const r=s.getRow(i+3);cellValue(r.getCell(1),info[i][0],'head');cellValue(r.getCell(2),info[i][1],i===info.length-1?'review':'normal');r.height=i===info.length-1?40:28;}
 }
@@ -228,39 +230,54 @@ function addAudit(wb,report){
  ws.views=[{state:'frozen',ySplit:1}];ws.autoFilter={from:'A1',to:'J'+(report.records.length+1)};
 }
 function addSources(wb,report,uploads){
- const ws=wb.addWorksheet('Source Review');
- ws.columns=[{width:15},{width:26},{width:64},{width:21},{width:17},{width:71},{width:17}];
- const header=ws.addRow(['Bank','Status','Official source page','Effective date','Needs review','Collection note','Uploaded evidence']);
+ const ws=wb.addWorksheet('Source PDFs');
+ ws.columns=[{width:18},{width:19},{width:20},{width:22},{width:23},{width:73},{width:58},{width:23},{width:18}];
+ const header=ws.addRow(['Bank','Source type','Effective date','Publication date','Selection status','Official rate sheet PDF','Official rate page','Rate cells to verify','Uploaded document']);
  header.eachCell(c=>cellValue(c,c.value,'head'));
  for(const s of report.sources){
-  const number=report.records.filter(r=>r.bankId===s.id&&r.status==='review').length;
-  const incoming=uploads.filter(x=>x.bankId===s.id).map(x=>x.name).join('; ');
-  const row=ws.addRow([s.name,s.status,s.url,s.effectiveDate,number,s.note,incoming]);
-  row.eachCell((c,n)=>cellValue(c,c.value,number?'review':'normal'));
+  const count=report.records.filter(r=>r.bankId===s.id&&r.status==='review').length;
+  const up=uploads.filter(x=>x.bankId===s.id).map(x=>x.name).join('; ');
+  const row=ws.addRow([s.name,s.sourceType||'Unavailable',s.documentDate||s.effectiveDate||'Not established',s.publishedDate||'Not stated',
+   s.status,s.documentUrl||'No official PDF selected',s.url,count,up]);
+  row.height=38;row.eachCell((c,n)=>cellValue(c,c.value,count?'review':'normal'));
+  if(s.documentUrl)row.getCell(6).value={text:s.documentUrl,hyperlink:s.documentUrl};
+  row.getCell(7).value={text:s.url,hyperlink:s.url};
  }
- const candidate=wb.addWorksheet('Upload Candidates');
- candidate.columns=[{width:19},{width:39},{width:95},{width:29}];
- candidate.addRow(['Bank','Uploaded filename','Extracted rate-bearing text (UNVERIFIED)','Review status']).eachCell(c=>cellValue(c,c.value,'head'));
- for(const u of uploads){
-  for(const line of contentLineMatches(u.text).slice(0,50)){
-   const row=candidate.addRow([u.bankId,u.name,escaped(line),'Unverified; check source']);
-   row.eachCell(c=>cellValue(c,c.value,'review'));
-  }
+ ws.views=[{state:'frozen',ySplit:1}];
+ const notes=ws.addRow(['Method','Select the latest discoverable bank-issued rate sheet whose documented effective date is no later than the report date. A sheet dated 1 November may be valid for a report as of 18 November.']);
+ notes.getCell(2).font={name:'Aptos',italic:true,size:10};
+ ws.addRow(['Important','Document effective dates and actual publication/upload dates are distinct. The publication-date field remains “Not stated” unless officially evidenced.']);
+ ws.addRow(['Historical','Old rate sheets not linked by the bank may be impossible to reconstruct automatically; they are NOT replaced with a newer rate sheet.']);
+ const audit=wb.addWorksheet('Source Review');
+ audit.columns=[{width:18},{width:27},{width:71},{width:24},{width:73},{width:22}];
+ audit.addRow(['Bank','Retrieval status','Official rate page','PDF effective date','Notes / blocker','Candidate PDF URLs found']).eachCell(c=>cellValue(c,c.value,'head'));
+ for(const s of report.sources){
+  const links=s.alternatives?.map(x=>x.url).slice(0,3).join('\n')||'';
+  const row=audit.addRow([s.name,s.status,s.url,s.documentDate||'',s.note||'',links]);row.height=46;
+  row.eachCell(c=>cellValue(c,c.value,s.status==='pdf_extracted'||s.status==='web_readable'?'normal':'review'));
  }
- if(!uploads.length){
-  candidate.addRow(['—','No files uploaded','You can add a bank-issued PDF/JPG on the website if a published rate cannot be accessed','']);
+ const candidates=wb.addWorksheet('Upload Candidates');
+ candidates.columns=[{width:16},{width:38},{width:90},{width:30}];
+ candidates.addRow(['Bank','Uploaded file','Extracted rate-bearing text (UNVERIFIED)','Review required']).eachCell(c=>cellValue(c,c.value,'head'));
+ for(const u of uploads)for(const line of contentLineMatches(u.text).slice(0,50)){
+  const row=candidates.addRow([u.bankId,u.name,escaped(line),'Unverified; check official source']);
+  row.eachCell(c=>cellValue(c,c.value,'review'));
  }
+ if(!uploads.length)candidates.addRow(['—','None','','']);
 }
+
 async function buildExcel(req,res){
  const input=quoteJSON(await rawRequest(req,350_000));
  const scope=input.scope||'both';
+ const date=input.asOf||todayDhaka();
+ if(!/^20\d{2}-\d{2}-\d{2}$/.test(date)||Number.isNaN(Date.parse(date))||date>todayDhaka())throw error('Please select a valid report date that is not in the future');
  if(!['both','FDR','DPS'].includes(scope))throw error('Invalid report type');
  const uploads=Array.isArray(input.uploads)?input.uploads.slice(0,7).map(x=>({
   bankId:String(x.bankId||'').slice(0,16),name:String(x.name||'').slice(0,90),
   text:String(x.text||'').slice(0,15_000)
  })).filter(x=>banks.some(b=>b.id===x.bankId)):[];
  const requested=products.filter(p=>scope==='both'||p.type===scope);
- const date=todayDhaka(),sources=await Promise.all(banks.map(collect));
+ const sources=await Promise.all(banks.map(b=>collectBank(b,date)));
  const records=buildRows(requested,sources,date);
  const report={asOf:date,sources,records};
  const wb=new ExcelJS.Workbook();wb.creator='MTB Peer Rate Monitor';wb.created=new Date();wb.calcProperties.fullCalcOnLoad=true;
@@ -294,7 +311,7 @@ export default async function handler(req,res){
  res.setHeader('Cache-Control','no-store');
  try{
   const action=String(req.query.action||'health').split('&')[0];
-  if(action==='health')return res.status(200).json({ok:true,stateless:true,archive:false,authRequired:false,version:'2.0'});
+  if(action==='health')return res.status(200).json({ok:true,stateless:true,archive:false,authRequired:false,version:'2.2'});
   if(action==='excel'&&req.method==='POST')return await buildExcel(req,res);
   if(action==='extract'&&req.method==='POST')return await extractPDF(req,res);
   return res.status(404).json({error:'This version only supports Excel download; report history was removed.'});
