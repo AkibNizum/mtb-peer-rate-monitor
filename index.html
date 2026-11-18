@@ -79,12 +79,47 @@ details summary{cursor:pointer;padding:14px;font-size:12px;font-weight:760}
  .actions{flex-direction:column-reverse}.actions button{width:100%}
  .navNote{font-size:10px}
 }
+
+/* Separate screenshot-to-PDF tool */
+.toolTabs{display:flex;gap:6px;background:#e7f0eb;padding:5px;border-radius:12px;margin:0 0 31px;width:fit-content;max-width:100%}
+.toolTab{border:0;background:transparent;color:#57746a;border-radius:9px;padding:12px 19px;font-size:13px;font-weight:730;cursor:pointer;white-space:nowrap}
+.toolTab[aria-selected="true"]{background:#fff;color:#0c6353;box-shadow:0 2px 8px #153f321c}
+.pdfDropZone{border:2px dashed #a8c8b9;border-radius:14px;background:#f5faf8;min-height:170px;padding:24px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;cursor:pointer;outline:none}
+.pdfDropZone:focus,.pdfDropZone.dragging{border-color:#0d6a57;background:#eaf8f0;box-shadow:0 0 0 3px #0d6a571e}
+.pdfDropIcon{width:54px;height:54px;border-radius:15px;background:#e3f1e8;color:#0d6353;display:grid;place-items:center;font-size:27px}
+.pdfDropZone strong{font-size:17px}.pdfDropZone small{color:#779184;font-size:12px;line-height:1.6}
+.pdfToolsRow{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:20px;flex-wrap:wrap}
+.pdfToolsRow label{margin:0}.pdfToolsRow select{min-width:205px}
+.pdfCounter{font-size:13px;font-weight:710;color:#356f5c}
+.pdfPreviews{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:14px}
+.pdfImageCard{display:flex;align-items:center;gap:12px;border:1px solid #dbe9e2;border-radius:11px;padding:10px;background:#fff;min-width:0}
+.pdfImagePreview{width:80px;height:86px;background:#f1f5f2;border:1px solid #e4ebe6;border-radius:8px;display:grid;place-items:center;flex-shrink:0;overflow:hidden}
+.pdfImagePreview img{display:block;max-width:100%;max-height:100%;object-fit:contain}
+.pdfImageDetails{min-width:0;flex:1;line-height:1.4}.pdfImageDetails strong{display:block;font-size:12px;color:#194e3e}
+.pdfImageName{font-size:12px;color:#375a4d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:2px 0}
+.pdfImageDetails small{font-size:10px;color:#7a8d81}
+.pdfPageActions{display:flex;flex-direction:column;gap:4px}
+.pdfPageActions button{border:1px solid #d8e4dc;background:#f7faf8;border-radius:6px;min-width:26px;min-height:24px;color:#346a58;cursor:pointer;font-size:14px}
+.pdfPageActions button:disabled{opacity:.32;cursor:default}
+.pdfEmpty{grid-column:1/-1;text-align:center;border:1px solid #dce8e2;border-radius:10px;padding:25px;color:#789084;font-size:12px;background:#fbfdfb}
+.pdfFooterActions{display:flex;gap:10px;align-items:center;margin-top:21px;flex-wrap:wrap}
+.pdfFooterActions .primary{flex:1}
+.pdfFooterActions button:disabled{opacity:.5;cursor:default}
+.pdfFileInput{max-width:100%;color:#527566;font-size:12px}
+@media(max-width:700px){.toolTabs{width:100%}.toolTab{flex:1;padding:11px 9px;font-size:12px}.pdfPreviews{grid-template-columns:1fr}.pdfDropZone{min-height:145px}.pdfFooterActions{flex-direction:column-reverse}.pdfFooterActions button{width:100%}}
+
 </style></head><body>
 <header><div class="container"><nav>
 <div class="brand"><div class="brandIcon">MTB</div><div>Peer Bank Rate Monitor<small>ALCO presentation generator</small></div></div>
 <div class="navNote">Public • No login • No saved reports</div>
 </nav></div></header>
 <main class="container">
+
+<div class="toolTabs" role="tablist" aria-label="Choose generator">
+<button class="toolTab" type="button" id="tabPpt" role="tab" aria-controls="pptTool" aria-selected="true" onclick="changeTool('ppt')">ALCO Presentation</button>
+<button class="toolTab" type="button" id="tabPdf" role="tab" aria-controls="pdfTool" aria-selected="false" onclick="changeTool('pdf')">Screenshot → PDF</button>
+</div>
+<section id="pptTool" role="tabpanel" aria-labelledby="tabPpt">
 <h1>Create your ALCO presentation.</h1>
 <p class="desc">Upload official bank rate sheets or screenshots if available. Click <b>Proceed</b> to review the extracted rates, then click <b>Generate PPT</b> to download an editable PowerPoint.</p>
 <div class="stepper"><div class="step active" id="stepLabel1"><strong>1</strong> Upload sources</div><span class="step sep">›</span><div class="step" id="stepLabel2"><strong>2</strong> Review &amp; generate</div></div>
@@ -120,10 +155,51 @@ details summary{cursor:pointer;padding:14px;font-size:12px;font-weight:760}
 <div class="actions"><button class="secondary" onclick="back()">← Back to uploads</button><button class="primary" id="generate" onclick="generate()">Generate editable PPT <span aria-hidden="true">↓</span></button></div>
 <div class="status" id="stepTwoStatus" role="status" aria-live="polite"></div>
 </section>
+
+</section>
+<section id="pdfTool" role="tabpanel" aria-labelledby="tabPdf" class="hidden">
+<h1>Turn screenshots into one PDF.</h1>
+<p class="desc">Paste screenshots directly using <b>Ctrl+V</b>, or drag and drop PNG/JPG images. Arrange the pages and click <b>Generate PDF</b>. No sign-in, uploads, OCR or report saving required.</p>
+<div class="panel">
+<h2>Screenshot → PDF</h2>
+<p class="small">Each screenshot becomes one page. Paste several screenshots one by one; they appear in the order you added them.</p>
+<div id="pdfDropZone" class="pdfDropZone" tabindex="0" role="button" aria-label="Click here, then paste screenshots with Ctrl plus V">
+<div class="pdfDropIcon" aria-hidden="true">▧</div>
+<strong>Click here, then press Ctrl+V</strong>
+<small>You can also drag screenshots here or choose files below.</small>
+</div>
+<div class="pdfToolsRow">
+<div><label for="pdfChoose">Or choose screenshots</label><input class="pdfFileInput" id="pdfChoose" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" multiple/></div>
+<div><label for="pdfPaperSize">PDF page size</label>
+<select id="pdfPaperSize"><option value="a4">A4 — automatic orientation</option><option value="match">Match screenshot proportions</option></select></div>
+</div>
+<div class="pdfToolsRow"><strong class="pdfCounter" id="pdfCounter">0 screenshots ready</strong><span class="small" style="margin:0">Use ↑ ↓ to change page order.</span></div>
+<div id="pdfPreviews" class="pdfPreviews" aria-live="polite"></div>
+<div class="pdfFooterActions">
+<button type="button" id="pdfClear" class="secondary" disabled>Clear all</button>
+<button type="button" id="pdfDownload" class="primary" disabled>Generate &amp; download PDF ↓</button>
+</div>
+<div id="pdfStatus" class="status" aria-live="polite" role="status">Paste or add screenshots to begin.</div>
+<div class="note"><b>Privacy:</b> Your screenshots are processed in your browser only. They are not uploaded or saved by this website. Text remains part of the image; it is not converted into editable PDF text.</div>
+</div>
+</section>
 <div class="footer">MTB-first rate comparisons • FDR and DPS • Publicly accessible • Official sources only • No report history or server-side file storage. Screenshot OCR may be inaccurate on merged tables and must be checked before ALCO.</div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
 <script>
+
+function changeTool(tool,updateHash=true){
+ const pdf=tool==='pdf';
+ document.getElementById('pptTool').classList.toggle('hidden',pdf);
+ document.getElementById('pdfTool').classList.toggle('hidden',!pdf);
+ document.getElementById('tabPpt').setAttribute('aria-selected',String(!pdf));
+ document.getElementById('tabPdf').setAttribute('aria-selected',String(pdf));
+ document.title=pdf?'MTB | Screenshot to PDF Generator':'MTB | ALCO Peer Bank PowerPoint Generator';
+ if(updateHash&&location.hash!=='#'+tool)history.replaceState(null,'','#'+tool);
+ if(pdf)document.getElementById('pdfDropZone').focus({preventScroll:true});
+}
+window.addEventListener('hashchange',()=>changeTool(location.hash==='#pdf'?'pdf':'ppt',false));
+
 const BANKS=[['MTB','Mutual Trust Bank'],['EBL','Eastern Bank'],['PRIME','Prime Bank'],['BRAC','BRAC Bank'],['DHAKA','Dhaka Bank'],['CITY','City Bank'],['UCB','United Commercial Bank']];
 const PRODUCT_IDS=[['monthly-benefit','MTB Monthly Benefit Plan'],['quarterly-benefit','MTB Quarterly Benefit Plan'],['fdr-days','MTB FDR in Days'],['fixed-deposit','MTB Fixed Deposit'],['double-saver','MTB Double Saver'],['brick-by-brick','MTB Brick by Brick'],['angona-dps','MTB Angona DPS'],['lakhopoti','MTB Lakhopoti Plan'],['kotipati','MTB Kotipati Plan'],['millionaire','MTB Millionaire Plan'],['education-plan','MTB Education Plan'],['junior-flexi','MTB Junior Flexi DPS']];
 const $=id=>document.getElementById(id);
@@ -271,4 +347,7 @@ async function generate(){
  }catch(e){msg('stepTwoStatus',e.message||String(e),true)}
  finally{setWorking(false)}
 }
-</script></body></html>
+changeTool(location.hash==='#pdf'?'pdf':'ppt',false);
+</script>
+<script src="/pdf-generator.js" defer></script>
+</body></html>
