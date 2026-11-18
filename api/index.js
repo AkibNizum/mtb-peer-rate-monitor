@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
 import * as cheerio from 'cheerio';
-import pdfParse from 'pdf-parse';
+import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 import {banks,products} from './catalog.js';
 
 export const config={api:{bodyParser:false}};
