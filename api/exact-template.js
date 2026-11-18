@@ -218,12 +218,11 @@ export async function generateExactReports(input){
  zip.file('MTB_Peer_FDR_Rates_'+date+'.pptx',results[0].buffer);
  zip.file('MTB_Peer_DPS_Rates_'+date+'.pptx',results[1].buffer);
  const sourceLines=['MTB PEER BANK SOURCE DOCUMENTS','Report as of '+date,
-  'SOURCE POLICY: USER-SUPPLIED PDFs ONLY. NO BANK WEBSITE SEARCH.',
+  'SOURCE POLICY: USER-SUPPLIED PDFs ACCEPTED AS SOURCES. NO WEBSITE OR SOURCE DATE VERIFICATION.',
   '', 'PDFs supplied for this report:'];
  for(const s of input.sources||[]){
   sourceLines.push('',String(s.name||s.id),
    'Uploaded PDF files: '+(Array.isArray(s.uploadedDocuments)&&s.uploadedDocuments.length?s.uploadedDocuments.map(u=>u.name).join('; '):'None supplied'),
-   'Effective date: '+String(s.documentDate||s.effectiveDate||'Not established'),
    'PDF extraction status: '+String(s.status||'Not verified'));
  }
  sourceLines.push('','Dash (-) = rate could not be established from the provided PDF, not confirmation of unavailability.',
