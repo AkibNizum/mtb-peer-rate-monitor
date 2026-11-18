@@ -249,7 +249,7 @@ const PRODUCT_IDS=[['monthly-benefit','MTB Monthly Benefit Plan'],['quarterly-be
 const $=id=>document.getElementById(id);
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&#39;'}[x]));
 const currentDhaka=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dhaka',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-$('asOf').value=currentDhaka();$('asOf').max=currentDhaka();
+$('asOf').value=currentDhaka(); // Presentation label only; no source-date eligibility cutoff
 let analysis=null,confirmed=new Map(),chosenFiles=[],working=false;
 $('banks').innerHTML=BANKS.map(([id,name])=>'<div class="bank"><div class="bank-head"><b>'+escapeHtml(name)+'</b><small>'+id+'</small></div><input type="file" accept=".pdf,application/pdf" multiple data-bank="'+id+'" aria-label="Upload '+escapeHtml(name)+' official rate files"/><div class="fileinfo" id="file-'+id+'">No PDF selected — rates for this bank will be marked -</div></div>').join('');
 document.querySelectorAll('input[type=file][data-bank]').forEach(el=>el.addEventListener('change',()=>{
