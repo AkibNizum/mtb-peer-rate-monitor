@@ -1,6 +1,8 @@
 import JSZip from 'jszip';
 import * as cheerio from 'cheerio';
 import {products,banks} from './catalog.js';
+import {FDR_TEMPLATE} from './templates/fdr.js';
+import {DPS_TEMPLATE} from './templates/dps.js';
 
 const nameBanks={
  MTB:['mutual trust bank','mtb'],
@@ -191,9 +193,9 @@ async function processTemplate(base64,kind,records,asOf){
 export async function generateExactReports(input){
  const date=String(input.asOf||'');
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw Error('Invalid report as-of date');
- if(!input.templates||!input.templates.FDR||!input.templates.DPS)throw Error('Both original FDR and DPS PowerPoint templates are required for exact formatting');
+ const templates={FDR:input.templates?.FDR||FDR_TEMPLATE,DPS:input.templates?.DPS||DPS_TEMPLATE};
  if(!Array.isArray(input.records)||input.records.length<50)throw Error('Proceed through source review before generating the presentation');
- const results=await Promise.all(['FDR','DPS'].map(x=>processTemplate(input.templates[x],x,input.records,date)));
+ const results=await Promise.all(['FDR','DPS'].map(x=>processTemplate(templates[x],x,input.records,date)));
  const zip=new JSZip();
  zip.file('MTB_Peer_FDR_Rates_'+date+'.pptx',results[0].buffer);
  zip.file('MTB_Peer_DPS_Rates_'+date+'.pptx',results[1].buffer);
