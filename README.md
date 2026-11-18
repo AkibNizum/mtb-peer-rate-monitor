@@ -8,7 +8,7 @@ Public, stateless ALCO presentation generator for Mutual Trust Bank's FDR and DP
 2. Optionally upload official **bank-issued PDFs, JPGs or PNG screenshots**, grouped by bank. This is particularly useful when bank webpages are dynamic or block automated access.
 3. Click **Proceed — review rate data**. The app checks latest discoverable eligible official rate sheets and reads your uploaded evidence.
 4. Review source statuses. Optionally confirm clearly matched OCR suggestions or manually enter rates from official uploaded documents.
-5. On first use, provide the **two original source PowerPoint templates** (11-slide FDR and 7-slide DPS). They are retained in the browser only for future use, not stored on the website.
+5. The **two exact original source PowerPoint templates** (11-slide FDR and 7-slide DPS) are already embedded in the project. You do not need to upload them.
 6. Click **Generate original-format PPTs** to download a ZIP containing two editable PPTX files and `Official_Source_PDFs.txt`. The engine edits the original slides' text cells in place; it does not recreate any slides or append source slides.
 7. Use the separate **Screenshot → PDF** tab to paste or upload screenshots and generate a multi-page PDF locally in the browser.
 
@@ -32,7 +32,7 @@ The app also retains the previous on-demand Excel export endpoint. No archive, a
 - PDF parsing in ephemeral server memory; screenshot OCR locally in the browser (Tesseract.js)
 - In-memory generation and direct PPTX download
 
-**Exact template policy:** No approximate, reconstructed PowerPoint export is permitted. The current system requires the user's original FDR and DPS PPTX files on first use. It keeps original slide order/count (11 and 7), graphics, fonts, tables, merged cells, colors, geometry and spacing unchanged; only verified, corresponding rate cells, report dates, and confirmed maturity tenor text may change. Nonmatching product comparisons are not populated. A separate plain-text source reference accompanies the PPTX files in the ZIP. Templates are retained only in browser IndexedDB; reports are not stored.
+**Exact template policy:** No approximate, reconstructed PowerPoint export is permitted. The user's actual original FDR and DPS PPTX binaries are committed in the project as template assets. The generator modifies rate text within the original slide XML, retaining slide order/count (11 and 7), logos, fonts, original tables, merged cells, colors, geometry and spacing. Only eligible competitor rates, report dates and confirmed maturity-tenor text are modified. A separate plain-text source reference accompanies the two PPTX files in the ZIP. Reports are never persisted.
 
 ## Run locally
 
