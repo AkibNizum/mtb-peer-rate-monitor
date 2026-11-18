@@ -226,7 +226,6 @@ details summary{cursor:pointer;padding:14px;font-size:12px;font-weight:760}
 </section>
 <div class="footer">MTB-first rate comparisons • FDR and DPS • PDF uploads only; no bank website searching • No report history or server-side file storage. OCR and complex rate-table mappings need human review before ALCO.</div>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
 <script>
 
 function changeTool(tool,updateHash=true){
@@ -256,6 +255,23 @@ document.querySelectorAll('input[type=file][data-bank]').forEach(el=>el.addEvent
  const id=el.dataset.bank,files=[...el.files];$('file-'+id).textContent=files.length?files.map(x=>x.name).join(', '):'No PDF selected — rates for this bank will be marked -';
 }));
 function msg(id,message,isError=false){$(id).textContent=message;$(id).classList.toggle('error',!!isError)}
+async function apiRequest(action,options={},timeoutMs=32000){
+ let lastError;
+ for(let attempt=0;attempt<2;attempt++){
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
+  try{
+   const response=await fetch('/api?action='+encodeURIComponent(action),{
+    ...options,cache:'no-store',signal:controller.signal
+   });
+   if(response.status>=502&&attempt===0){lastError=Error('Service temporarily unavailable');continue;}
+   return response;
+  }catch(e){
+   lastError=e;
+  }finally{clearTimeout(timer);}
+ }
+ throw Error('Could not connect to the report service. If this website is unreliable on your network, try mobile data or a different connection. '+(lastError?.name==='AbortError'?'The request timed out.':''));
+}
+
 function setWorking(v){working=v;$('proceed').disabled=v;$('generate').disabled=v}
 async function loadOcrLibrary(){
  if(window.Tesseract)return window.Tesseract;
@@ -305,7 +321,7 @@ async function readAttachment(file){
  const name=file.name,mime=file.type||'';
  if(!/\.pdf$/i.test(name)&&mime!=='application/pdf')throw Error('Only PDF files can be used as ALCO data sources. Use Screenshot → PDF to convert images first.');
  if(file.size>3_000_000)throw Error(file.name+' exceeds the 3 MB temporary PDF text-extraction limit. Compress or split the PDF.');
- const response=await fetch('/api?action=extract',{method:'POST',headers:{'content-type':'application/pdf'},body:file});
+ const response=await apiRequest('extract',{method:'POST',headers:{'content-type':'application/pdf'},body:file},30000);
  const result=await response.json().catch(()=>({}));
  if(!response.ok)throw Error(result.error||'PDF extraction failed');
  let text=String(result.text||''),notice=result.notice||'PDF text extracted';
@@ -339,7 +355,7 @@ async function proceed(){
    }
   }
   msg('stepOneStatus','Accepting your PDFs and extracting rates — no date or website checks…');
-  const response=await fetch('/api?action=review',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({asOf:$('asOf').value,uploads}),cache:'no-store'});
+  const response=await apiRequest('review',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({asOf:$('asOf').value,uploads})},35000);
   const data=await response.json().catch(()=>({}));
   if(!response.ok)throw Error(data.error||'Source review failed');
   analysis=data;
@@ -362,7 +378,7 @@ function showReview(){
   const link='';
   const v=count(analysis.rows,id,'verified'),missing=count(analysis.rows,id,'pdf_missing');
   const f=files.length?files.map(x=>escapeHtml(x.name)+(x.chars?' ('+x.chars+' text characters)':' — no readable text')+(x.notice?' · '+escapeHtml(x.notice):'')).join('; '):'No PDF supplied';
-  return '<div class="source-item"><div><strong>'+escapeHtml(name)+'</strong><br/><small>'+escapeHtml(f)+'</small></div><div><small>Effective date: '+escapeHtml(date)+' · '+v+' rates matched, '+missing+' unresolved<br/>'+escapeHtml(s.note||'')+'</small></div><div><span class="state '+(readable?'ok':'warn')+'">'+escapeHtml(readable?'PDF text available':'PDF review needed')+'</span></div></div>';
+  return '<div class="source-item"><div><strong>'+escapeHtml(name)+'</strong><br/><small>'+escapeHtml(f)+'</small></div><div><small>'+v+' rates matched, '+missing+' not extracted<br/>'+escapeHtml(s.note||'')+'</small></div><div><span class="state '+(readable?'ok':'warn')+'">'+escapeHtml(readable?'PDF received':'PDF missing or unreadable')+'</span></div></div>';
  }).join('');
  const suggestions=analysis.suggestions||[];
  $('suggestions').innerHTML=suggestions.length?suggestions.map((x,i)=>
@@ -420,7 +436,7 @@ async function generate(){
    records[index].rate=value.rate;records[index].status='uploaded_reviewed';
    records[index].note=value.evidence;records[index].sourceUrl='Uploaded official document (reviewed by user)';
   }
-  const response=await fetch('/api?action=ppt-exact',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({asOf:analysis.asOf,records,sources:analysis.sources}),cache:'no-store'});
+  const response=await apiRequest('ppt-exact',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({asOf:analysis.asOf,records,sources:analysis.sources})},50000);
   if(!response.ok){const e=await response.json().catch(()=>({}));throw Error(e.error||'PowerPoint generation failed (HTTP '+response.status+')')}
   const blob=await response.blob();
   if(blob.size<3000)throw Error('Generated original-template PowerPoint ZIP is unexpectedly empty.');
