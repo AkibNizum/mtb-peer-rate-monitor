@@ -144,7 +144,7 @@ details summary{cursor:pointer;padding:14px;font-size:12px;font-weight:760}
 <section class="panel" id="stepOne">
 <h2>Step 1 — Upload bank PDFs</h2>
 <p class="small">The system does <b>not</b> search bank websites or reuse old rates. Upload one or more official rate-sheet PDFs per bank. Without a PDF, that bank's rate cells will show <b>-</b>. Need to use screenshots? Convert them to a PDF using the separate Screenshot → PDF tab.</p>
-<div class="group"><div><label for="asOf">Report as-of date</label><input id="asOf" type="date" required/></div><div class="small" style="margin:0">Only the PDFs you provide will be considered. A document with an effective date after the selected report date will not be used.</div></div>
+<div class="group"><div><label for="asOf">Presentation date</label><input id="asOf" type="date" required/></div><div class="small" style="margin:0">This date is only the presentation's label and filename. It does not affect PDF acceptance or data extraction.</div></div>
 <div class="banks" id="banks"></div>
 <div class="note"><b>Upload guidance:</b> Provide bank-issued PDFs showing product names, tenors, amount brackets and effective dates. If a PDF is scanned, the page will try OCR. A rate not established from the supplied PDF is shown as <b>-</b>, without guessing. Proposed Rate stays blank. Uploaded files and presentations are not saved.</div>
 <div class="actions"><button class="primary full" id="proceed" onclick="proceed()"><span>Proceed — review rate data</span><span aria-hidden="true">→</span></button></div>
@@ -152,14 +152,14 @@ details summary{cursor:pointer;padding:14px;font-size:12px;font-weight:760}
 </section>
 <section class="panel hidden" id="stepTwo">
 <h2>Step 2 — Review and generate PowerPoint</h2>
-<p class="small">Only the supplied PDFs have been processed. Review extracted-rate suggestions if needed, then download the editable original-format presentations. Missing or unreadable rates show <b>-</b>; Proposed Rate remains blank.</p>
+<p class="small">The PDFs you provided are accepted without source-date checks or external verification. Matching rates are inserted automatically. Missing or unreadable rates show <b>-</b>; Proposed Rate remains blank.</p>
 <div class="summary" id="summary"></div>
 <h3>Bank source status</h3>
 <div class="source-list" id="sourceList"></div>
-<details id="suggestionPanel"><summary>Extracted PDF rate suggestions — confirm before including</summary><div class="detail-content"><p class="small">Only select figures that you can verify in your uploaded PDF. OCR text is not automatically treated as verified.</p><div class="suggestions" id="suggestions"></div></div></details>
-<details><summary>Manually confirm unresolved PDF rates (optional)</summary>
+<details id="suggestionPanel" class="hidden"><summary>Extracted PDF matches</summary><div class="detail-content"><p class="small">Uniquely matched product/tenor/rate figures are inserted automatically.</p><div class="suggestions" id="suggestions"></div></div></details>
+<details><summary>Optional corrections for unreadable PDF rates</summary>
 <div class="detail-content">
-<p class="small">For complex PDF tables, enter the confirmed rate against the equivalent MTB product and tenor. Enter only an actual comparable peer product from the PDF.</p>
+<p class="small">If the PDF text extractor misses a rate, you may enter it manually. Only enter rates for peer products that actually compete with the MTB product.</p>
 <div class="manual-grid">
 <div><label>Bank</label><select id="manualBank" onchange="refreshManual()"></select></div>
 <div><label>MTB product</label><select id="manualProduct" onchange="refreshTenors()"></select></div>
@@ -172,7 +172,7 @@ details summary{cursor:pointer;padding:14px;font-size:12px;font-weight:760}
 
 <div class="note"><b>Exact MTB templates installed:</b> Your original 11-slide FDR and 7-slide DPS PowerPoint files are built into this generator. No template upload is needed; slides, logos, table geometry, fonts, colors, and spacing are preserved.</div>
 
-<div class="note"><b>Source controls:</b> A dash (–) means no rate could be established from the supplied PDF, not necessarily that the bank does not offer it. Proposed Rate always stays blank. Uploaded PDF filenames and effective dates are included with the original-format presentations.</div>
+<div class="note"><b>Source controls:</b> All uploaded PDFs are accepted as the sources. No source-date or website verification is performed. A dash (–) means the rate could not be established from the supplied PDF, not that the bank necessarily lacks the product. Proposed Rate always stays blank.</div>
 <div class="actions"><button class="secondary" onclick="back()">← Back to uploads</button><button class="primary" id="generate" onclick="generate()">Generate original-format PPTs <span aria-hidden="true">↓</span></button></div>
 <div class="status" id="stepTwoStatus" role="status" aria-live="polite"></div>
 </section>
@@ -338,7 +338,7 @@ async function proceed(){
     chosenFiles.push({bankId,name:file.name,chars:0,notice:'Failed: '+e.message});
    }
   }
-  msg('stepOneStatus','Extracting rates from the PDFs you supplied — no website lookups…');
+  msg('stepOneStatus','Accepting your PDFs and extracting rates — no date or website checks…');
   const response=await fetch('/api?action=review',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({asOf:$('asOf').value,uploads}),cache:'no-store'});
   const data=await response.json().catch(()=>({}));
   if(!response.ok)throw Error(data.error||'Source review failed');
@@ -358,8 +358,7 @@ function showReview(){
   '<div class="metric"><strong>'+z.uploadedFiles+'</strong><small>Provided PDFs</small></div>';
  $('sourceList').innerHTML=BANKS.map(([id,name])=>{
   const s=analysis.sources.find(x=>x.id===id)||{},files=chosenFiles.filter(x=>x.bankId===id);
-  const readable=s.status==='uploaded_pdf'||s.status==='uploaded_pdf_undated';
-  const date=s.documentDate||s.effectiveDate||'Date not established';
+  const readable=s.status==='uploaded_pdf';
   const link='';
   const v=count(analysis.rows,id,'verified'),missing=count(analysis.rows,id,'pdf_missing');
   const f=files.length?files.map(x=>escapeHtml(x.name)+(x.chars?' ('+x.chars+' text characters)':' — no readable text')+(x.notice?' · '+escapeHtml(x.notice):'')).join('; '):'No PDF supplied';
@@ -373,8 +372,8 @@ function showReview(){
  $('manualProduct').innerHTML=PRODUCT_IDS.map(([id,name])=>'<option value="'+id+'">'+escapeHtml(name)+'</option>').join('');
  refreshTenors(); renderOverrides();
  const issue=analysis.issues||[];
- if(issue.length)msg('stepTwoStatus','Attention: '+issue.length+' PDF(s) require manual review. The PPT will mark unsupported rates with -.');
- else msg('stepTwoStatus','PDF-only review complete. Click Generate PPT to download original-format presentations; unsupported rates will appear as -.');
+ if(issue.length)msg('stepTwoStatus',issue.length+' PDF extraction issue(s). All PDFs were accepted; unmatched values are -. You can generate the PPT now.');
+ else msg('stepTwoStatus','PDFs accepted and matches filled automatically. Click Generate PPT; unmatched values will appear as -.');
 }
 function refreshManual(){refreshTenors()}
 function refreshTenors(){
