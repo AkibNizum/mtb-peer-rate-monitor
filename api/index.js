@@ -2,7 +2,7 @@ import ExcelJS from 'exceljs';
 import * as cheerio from 'cheerio';
 import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 import {banks,products} from './catalog.js';
-import {collectBank,deriveRate} from './extractor.js';
+import {collectBank,deriveRate,uploadedEvidenceDate} from './extractor.js';
 import {generatePowerPoint} from './presentation.js';
 
 export const config={api:{bodyParser:false}};
@@ -318,6 +318,8 @@ function evidenceSuggestions(uploads,rows,asOf){
   return hits.length===1?hits[0]:null;
  };
  for(const up of uploads){
+  const sourceDate=uploadedEvidenceDate(String(up.text||'')+'\n'+up.name);
+  if(sourceDate&&sourceDate>asOf){issues.push({bankId:up.bankId,name:up.name,issue:'This document is effective '+sourceDate+', after the selected report date. It is not eligible.'});continue}
   const text=String(up.text||'').replace(/\r/g,'');
   const lines=text.split('\n').map(x=>x.trim()).filter(Boolean);
   if(!lines.length){issues.push({bankId:up.bankId,name:up.name,issue:'No machine-readable text. Upload a clearer screenshot or enter rates manually.'});continue}
@@ -359,7 +361,17 @@ async function analyzeReport(req,res){
   text:String(x.text||'').slice(0,23000)
  })).filter(x=>banks.some(b=>b.id===x.bankId)):[];
  const sources=await Promise.all(banks.map(b=>collectBank(b,asOf)));
- for(const s of sources)s.uploadedDocuments=uploads.filter(u=>u.bankId===s.id).map(u=>({name:u.name,readable:!!u.text}));
+ for(const s of sources){
+  s.uploadedDocuments=uploads.filter(u=>u.bankId===s.id).map(u=>({
+   name:u.name,readable:!!u.text,effectiveDate:uploadedEvidenceDate(u.text+'\n'+u.name)
+  }));
+  const newer=s.uploadedDocuments.filter(u=>u.effectiveDate&&u.effectiveDate<=asOf
+    &&(!s.documentDate||u.effectiveDate>s.documentDate)).sort((a,b)=>b.effectiveDate.localeCompare(a.effectiveDate))[0];
+  if(newer){
+    s.uploadedNewer=true;s.status='uploaded_newer_review';
+    s.note=(s.note?s.note+'; ':'')+'Newer user-uploaded sheet '+newer.name+' (effective '+newer.effectiveDate+') supersedes website rates. Automatically matched older rates are held for review until verified from the upload.';
+  }
+ }
  const rows=buildRows(products,sources,asOf);
  const matches=evidenceSuggestions(uploads,rows,asOf);
  const stats={verified:rows.filter(x=>x.status==='verified').length,
