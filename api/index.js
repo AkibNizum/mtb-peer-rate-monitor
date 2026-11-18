@@ -88,8 +88,8 @@ async function collect(bank){
  try{
   const response=await restrictedFetch(bank.url,bank);
   if(response.bytes.subarray(0,4).toString()==='%PDF'){
-   item.text=clean((await pdfParse(response.bytes)).text||'').slice(0,100_000);
-   item.documentUrl=response.url;item.status='retrieved_pdf';
+   item.text='';
+   item.documentUrl=response.url;item.status='pdf_requires_upload';item.note='Bank PDF discovered; automatic deep PDF parsing skipped for fast generation. Upload it for manual review.';
   }else{
    const html=response.bytes.toString('utf8');
    const $=cheerio.load(html),tables=[];
@@ -108,10 +108,9 @@ async function collect(bank){
     try{
      const pdf=await restrictedFetch(links[0].url,bank,4200);
      if(pdf.bytes.subarray(0,4).toString()==='%PDF'){
-      const data=await pdfParse(pdf.bytes);
-      item.text+=' '+clean(data.text).slice(0,75_000);
       item.documentUrl=pdf.url;
-      item.status='retrieved_web_pdf';
+      item.status='linked_pdf_requires_upload';
+      item.note='Official bank PDF detected; use optional upload for manual rate review.';
      }
     }catch(e){item.note='Linked PDF inaccessible: '+String(e.message).slice(0,150);}
    }
