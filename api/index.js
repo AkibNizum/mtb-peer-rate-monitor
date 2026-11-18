@@ -354,7 +354,7 @@ function evidenceSuggestions(uploads,rows,asOf){
  return {suggestions:suggested.slice(0,110),issues};
 }
 async function analyzeReport(req,res){
- const input=quoteJSON(await rawRequest(req,450_000)),asOf=String(input.asOf||todayDhaka());
+ const input=quoteJSON(await rawRequest(req,1_000_000)),asOf=String(input.asOf||todayDhaka());
  if(!/^20\d{2}-\d{2}-\d{2}$/.test(asOf)||Number.isNaN(Date.parse(asOf))||asOf>todayDhaka())throw error('Invalid report as-of date');
  const uploads=Array.isArray(input.uploads)?input.uploads.slice(0,24).map(x=>({
   bankId:String(x.bankId||'').slice(0,16),name:String(x.name||'').slice(0,90),
@@ -382,7 +382,7 @@ async function analyzeReport(req,res){
  return res.status(200).json({asOf,rows,sources,stats,...matches,stateless:true});
 }
 async function downloadPpt(req,res){
- const input=quoteJSON(await rawRequest(req,450_000));
+ const input=quoteJSON(await rawRequest(req,1_000_000));
  const asOf=String(input.asOf||''),rows=input.records;
  if(!/^20\d{2}-\d{2}-\d{2}$/.test(asOf)||asOf>todayDhaka())throw error('Invalid report date');
  if(!Array.isArray(rows)||rows.length<50)throw error('Please click Proceed and review the data before generating PowerPoint');
