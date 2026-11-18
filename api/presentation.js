@@ -101,7 +101,7 @@ function splitDays(){
 function sourcesSlide(ppt,sources,date,page){
  const s=ppt.addSlide();putHeader(s,'Official Source Documents',date,page);
  const columns=[{text:'Bank',options:{bold:true,color:WHITE,fill:GREEN}},{text:'Effective date',options:{bold:true,color:WHITE,fill:GREEN}},{text:'Official document / page',options:{bold:true,color:WHITE,fill:GREEN}},{text:'Collection result',options:{bold:true,color:WHITE,fill:GREEN}}];
- const rows=[columns,...sources.map(b=>[b.name,b.documentDate||b.effectiveDate||'Not confirmed',b.documentUrl||b.url||'—',(b.status||'review')+(b.uploadedDocuments?.length?'\nUploaded: '+b.uploadedDocuments.map(u=>u.name).join('; '):'')].map(text=>({text,options:{fontSize:9,fill:WHITE,color:DARK,margin:0.04}})))];
+ const rows=[columns,...sources.map(b=>[b.name,b.documentDate||b.effectiveDate||'Not confirmed',b.documentUrl||b.url||'—',(b.status||'review')+(b.uploadedDocuments?.length?'\nUploaded: '+b.uploadedDocuments.map(u=>u.name+(u.effectiveDate?' ('+u.effectiveDate+')':'')).join('; '):'')].map(text=>({text,options:{fontSize:9,fill:WHITE,color:DARK,margin:0.04}})))];
  s.addTable(rows,{x:0.47,y:1.62,w:12.35,h:4.85,colW:[2.15,1.35,7.0,1.85],rowH:0.58,border:{type:'solid',color:BORDER,pt:0.6},fontFace:'Arial',fontSize:9,margin:0.05,breakLine:false});
  s.addText('A publication date is not assumed to equal the effective date. These links are included for source checking; no report is archived.',{x:0.53,y:6.55,w:12,h:0.34,fontSize:9.4,color:GREY,margin:0});
  return s;
@@ -113,7 +113,7 @@ export async function generatePowerPoint(input){
  const sources=Array.isArray(input.sources)?input.sources.slice(0,7).map(s=>({
   id:String(s.id||''),name:String(s.name||''),url:String(s.url||''),documentUrl:String(s.documentUrl||''),
   documentDate:String(s.documentDate||''),effectiveDate:String(s.effectiveDate||''),status:String(s.status||''),
-  uploadedDocuments:Array.isArray(s.uploadedDocuments)?s.uploadedDocuments.slice(0,12).map(u=>({name:String(u.name||'').slice(0,100),readable:!!u.readable})):[]
+  uploadedDocuments:Array.isArray(s.uploadedDocuments)?s.uploadedDocuments.slice(0,12).map(u=>({name:String(u.name||'').slice(0,100),readable:!!u.readable,effectiveDate:String(u.effectiveDate||'')})):[]
  })):[];
  const idx=new Map(records.map(x=>[x.productId+'|'+x.tenor+'|'+x.bankId,x]));
  const ppt=new pptxgen();ppt.layout='LAYOUT_WIDE';ppt.author='MTB Peer Deposit Rate Monitoring System';
