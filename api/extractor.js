@@ -24,6 +24,7 @@ function effectiveDate(s){
  for(const x of matches){const d=dateFragment(x[1]);if(d)return d;}
  return dateFragment(txt.slice(0,2500));
 }
+export function uploadedEvidenceDate(text){return effectiveDate(String(text||'').slice(0,18000));}
 function dateFromUrl(s){
  const decoded=decodeURIComponent(String(s||'')).replace(/[_-]/g,' ');
  const date=dateFragment(decoded);
@@ -348,7 +349,7 @@ function parsePDF(src,p,tenor){
 }
 
 export function deriveRate(src,product,bank,tenor,asOf){
- if(!src||src.status==='access_blocked'||src.status==='unavailable')return null;
+ if(!src||src.status==='access_blocked'||src.status==='unavailable'||src.uploadedNewer) return null;
  if(src.id==='MTB')return parseMTB(src,product,tenor,asOf);
  if((src.status==='pdf_extracted'||src.status==='pdf_extracted_fallback')&&src.documentDate<=asOf)return parsePDF(src,product,tenor);
  return null;
