@@ -6,7 +6,7 @@ export const banks=[
 {id:"BRAC",name:"BRAC Bank",domain:"bracbank.com",url:"https://www.bracbank.com/en/page/deposit-interest-rate"},
 {id:"DHAKA",name:"Dhaka Bank",domain:"dhakabank.com.bd",url:"https://dhakabank.com.bd/rates-and-charges/"},
 {id:"CITY",name:"City Bank",domain:"citybankplc.com",url:"https://www.citybankplc.com/gsi/conventional-banking-products"},
-{id:"UCB",name:"United Commercial Bank",domain:"ucb.com.bd",url:"https://www.ucb.com.bd/rates/interest-rates/"}
+{id:"UCB",name:"United Commercial Bank",domain:"ucb.com.bd",url:"https://www.ucb.com.bd/rates/interest-rates/",fallbackPdf:"https://www.ucb.com.bd/reports/interest-rates/instruction-circular-no1635-full-deposit-productsucb-website.pdf"}
 ];
 const peerIds=banks.slice(1).map(x=>x.id);
 function item(id,type,name,tenors,peers){
