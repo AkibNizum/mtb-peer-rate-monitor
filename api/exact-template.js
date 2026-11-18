@@ -32,8 +32,9 @@ function tenor(s){
  return '';
 }
 function rateValue(record){
- if(!record||!['verified','uploaded_reviewed','tenor_na'].includes(record.status))return '';
- if(record.status==='tenor_na')return '-';
+ if(!record)return '-';
+ if(['pdf_missing','product_na','tenor_na','review'].includes(record.status))return '-';
+ if(!['verified','uploaded_reviewed'].includes(record.status))return '-';
  if(record.rate===null||record.rate===''||record.rate===undefined)return '';
  const v=Number(record.rate);return Number.isFinite(v)&&v>=0&&v<=30?v.toFixed(2)+'%':'';
 }
@@ -118,7 +119,7 @@ function sourceIndex(records){
   const key=r.productId+'|'+tenor(r.tenor)+'|'+r.bankId;
   if(!key.includes('|m')&&!key.includes('|d'))continue;
   const rVal=rateValue(r);
-  if(rVal&&['verified','uploaded_reviewed','tenor_na'].includes(r.status))index.set(key,{...r,formatted:rVal});
+  if(rVal)index.set(key,{...r,formatted:rVal});
  }
  return index;
 }
@@ -161,6 +162,23 @@ async function processTemplate(base64,kind,records,asOf){
     if(safeRateCell($,cells[2]))replaceText($,cells[2],''); // MTB proposed always blank
     if(kind==='DPS'&&no===7&&safeRateCell($,cells[4]))replaceText($,cells[4],'');
     if(!keyTenor)continue;
+    // Rate cells in the supplied original layout must never retain old figures.
+    // A dash means a rate was not established from the user-supplied PDFs,
+    // NOT that a bank has officially discontinued that rate.
+    const fillDash=column=>{
+     if(!safeRateCell($,cells[column]))return;
+     const value=cellText($,cells[column]);
+     if(!value)replaceText($,cells[column],'-');
+    };
+    fillDash(1); // MTB current rate
+    if(kind==='DPS'&&no===7)fillDash(3); // Junior Flexi current rate; column 4 remains Proposed
+    for(const [peerBank,peerColumns] of columns.entries()){
+     if(peerBank==='MTB')continue;
+     for(const column of peerColumns)fillDash(column);
+    }
+    // Keep the Proposed Rate columns empty, including the 2nd MTB product on DPS slide 7.
+    if(safeRateCell($,cells[2]))replaceText($,cells[2],'');
+    if(kind==='DPS'&&no===7&&safeRateCell($,cells[4]))replaceText($,cells[4],'');
     for(const [bank,columnsOfBank] of columns.entries()){
      if(!columnsOfBank.length)continue;
      // Multi-column peer panels represent different products or amount brackets.
@@ -199,14 +217,18 @@ export async function generateExactReports(input){
  const zip=new JSZip();
  zip.file('MTB_Peer_FDR_Rates_'+date+'.pptx',results[0].buffer);
  zip.file('MTB_Peer_DPS_Rates_'+date+'.pptx',results[1].buffer);
- const sourceLines=['MTB PEER BANK SOURCE DOCUMENTS','Report as of '+date,'','Rate sources and effective dates (do not infer publication dates):'];
+ const sourceLines=['MTB PEER BANK SOURCE DOCUMENTS','Report as of '+date,
+  'SOURCE POLICY: USER-SUPPLIED PDFs ONLY. NO BANK WEBSITE SEARCH.',
+  '', 'PDFs supplied for this report:'];
  for(const s of input.sources||[]){
-  sourceLines.push('',String(s.name||s.id), 'Official PDF: '+String(s.documentUrl||'Not supplied'), 'Official page: '+String(s.url||''),
-   'Effective date: '+String(s.documentDate||s.effectiveDate||'Not confirmed'), 'Retrieval: '+String(s.status||'Not verified'));
+  sourceLines.push('',String(s.name||s.id),
+   'Uploaded PDF files: '+(Array.isArray(s.uploadedDocuments)&&s.uploadedDocuments.length?s.uploadedDocuments.map(u=>u.name).join('; '):'None supplied'),
+   'Effective date: '+String(s.documentDate||s.effectiveDate||'Not established'),
+   'PDF extraction status: '+String(s.status||'Not verified'));
  }
- sourceLines.push('','Blank rate = not verified. Dash = confirmed missing comparable tenor.',
-  'Proposed Rate columns are intentionally blank. No change to original PowerPoint layout.',
-  'If a peer has no genuine comparable product, do not insert a rate for that bank.',
+ sourceLines.push('','Dash (-) = rate could not be established from the provided PDF, not confirmation of unavailability.',
+  'Proposed Rate columns are intentionally blank. Original PowerPoint layout, typography and table dimensions are preserved.',
+  'Only genuine comparable peer products are eligible for population.',
   '',...results.flatMap(r=>r.log));
  zip.file('Official_Source_PDFs.txt',sourceLines.join('\n'));
  return zip.generateAsync({type:'nodebuffer',compression:'DEFLATE',compressionOptions:{level:6}});
