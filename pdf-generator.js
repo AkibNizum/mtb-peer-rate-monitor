@@ -201,5 +201,5 @@ function init(){
  render();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
-window.MTBPDF={clear,receiveImages}; // supports the visible tab; no data is sent to the server
+window.MTBPDF={clear,receiveImages,createImagePdf:assemblePdf}; // browser-only PDF utility for screenshots and Unicode text
 })();
