@@ -1,6 +1,6 @@
 // PDF-only table reader. No website lookups, no date or issuer verification.
 // Product and tenor must both be evidenced; ambiguous amount tiers stay unresolved.
-const clean=s=>String(s??'').replace(/[\u00a0\t]+/g,' ').replace(/\s+/g,' ').trim();
+const clean=s=>String(s??'').replace(/[\u00a0\t]+/g,' ').replace(/\s+/g,' ').replace(/(\d)\s*\.\s*(\d)/g,'$1.$2').replace(/(\d\.\d)\s+(\d)(?=\s*%)/g,'$1$2').replace(/(\d)\s+%/g,'$1%').trim();
 const norm=s=>clean(s).toLowerCase().replace(/[’‘]/g,"'").replace(/[^a-z0-9]+/g,' ').trim();
 const rateFormat=/^(?:\d{1,2}(?:\.\d{1,3})?)\s*%?$/;
 const tenorRe=/\b(\d{1,3})\s*(years?|yrs?|yr|y|months?|mons?|mos?|mo|m|days?|d)\b/gi;
