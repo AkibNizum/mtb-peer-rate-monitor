@@ -230,6 +230,7 @@ export async function generateExactReports(input){
   'Only genuine comparable peer products are eligible for population.',
   '',...results.flatMap(r=>r.log));
  zip.file('Official_Source_PDFs.txt',sourceLines.join('\n'));
+ if(input.workbook)zip.file('MTB_Extracted_Peer_Rates_'+date+'.xlsx',input.workbook);
  const csvCell=value=>'"'+String(value??'').replace(/"/g,'""').replace(/[\r\n]+/g,' ').slice(0,600)+'"';
  const auditRows=[['Bank','MTB product','MTB tenor','Peer product','Rate (%)','Status','Source PDF','Evidence']];
  for(const row of input.records||[]){
