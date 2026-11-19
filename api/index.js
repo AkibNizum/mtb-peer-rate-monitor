@@ -3,6 +3,7 @@ import * as cheerio from 'cheerio';
 import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 import {banks,products} from './catalog.js';
 import {deriveRate} from './extractor.js';
+import {analyzeUploadedPDFs} from './pdf-matcher.js';
 import {generatePowerPoint} from './presentation.js';
 import {generateExactReports} from './exact-template.js';
 
@@ -41,7 +42,7 @@ function tenorKey(s){
 }
 async function rawRequest(req,max=MAX_REQUEST){
  let chunks=[],size=0;
- for await(const x of req){size+=x.length;if(size>max)throw error('File or request exceeds 3 MB',413);chunks.push(x);}
+ for await(const x of req){size+=x.length;if(size>max)throw error('Request is too large; use a smaller PDF or the local text reader',413);chunks.push(x);}
  return Buffer.concat(chunks);
 }
 function quoteJSON(b){
@@ -296,144 +297,132 @@ async function buildExcel(req,res){
 }
 async function extractPDF(req,res){
  const kind=String(req.headers['content-type']||'').split(';')[0].trim();
- if(!typeAllows.includes(kind))throw error('Only PDF, JPG or PNG supported');
+ if(kind!=='application/pdf')throw error('Upload a PDF document, not an image');
  const file=await rawRequest(req,MAX_REQUEST);
- if(!file.length)throw error('Empty file');
- const valid=kind==='application/pdf'?file.subarray(0,4).toString()==='%PDF':
-  kind==='image/jpeg'?file[0]===255&&file[1]===216:file.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]));
- if(!valid)throw error('File does not match its declared format');
- if(kind!=='application/pdf')return res.status(200).json({text:'',notice:'Image was not uploaded to storage. Use browser OCR preview; review extracted figures before ALCO.'});
+ if(file.length<5||file.subarray(0,4).toString()!=='%PDF')throw error('The selected file is not a readable PDF');
+ let plain=null,layout=null,plainIssue='',layoutIssue='';
+ try{plain=await pdfParse(file)}catch(e){plainIssue=String(e.message||e).slice(0,160)}
+ // Rebuild lines from PDF text coordinates; this preserves product/tenor/rate
+ // rows in many fixed-column bank rate tables that plain extraction flattens.
  try{
-  const parsed=await pdfParse(file);
-  return res.status(200).json({text:String(parsed.text||'').slice(0,20_000),
-   notice:'PDF text extracted in memory. Proposed rates and unverified bank rates remain blank.'});
- }catch{return res.status(200).json({text:'',notice:'Scanned PDF has no machine-readable text. Please upload a JPG/PNG scan for browser OCR.'});}
-}
-
-function evidenceSuggestions(uploads){
- const suggested=[],issues=[];
- const strip=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
- const oneRate=s=>{
-  const values=[...String(s).matchAll(/(?<!\d)(\d{1,2}(?:\.\d{1,3})?)\s*%/g)]
-   .map(x=>Number(x[1])).filter(x=>x>=0&&x<=30);
-  return values.length===1?values[0]:null;
- };
- for(const up of uploads){
-  const lines=String(up.text||'').replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean);
-  if(!lines.length){
-   issues.push({bankId:up.bankId,name:up.name,issue:'PDF accepted, but no readable rate text could be extracted; missing values marked -.'});
-   continue;
-  }
-  const bank=banks.find(b=>b.id===up.bankId);
-  if(!bank)continue;
-  let found=0;
-  for(const p of products){
-   const peer=bank.id==='MTB'?p.name:p.peers[bank.id]||'N/A';
-   if(peer==='N/A')continue;
-   const alias=strip(peer).split(' ').filter(Boolean).slice(0,3).join(' ');
-   if(alias.length<7)continue;
-   for(const tenor of p.tenors){
-    const normalizedTenor=strip(tenor);
-    if(normalizedTenor.length<3)continue;
-    for(let i=0;i<lines.length;i++){
-     const rate=oneRate(lines[i]),normalized=strip(lines[i]);
-     if(rate===null||!normalized.includes(normalizedTenor))continue;
-     // A rate only qualifies if the PDF text identifies the comparable product
-     // on the same line or immediately above the rate/tenor row.
-     const context=strip(lines.slice(Math.max(0,i-3),i+1).join(' '));
-     if(!context.includes(alias))continue;
-     suggested.push({
-      key:p.id+'|'+tenor+'|'+bank.id,bankId:bank.id,productId:p.id,tenor,
-      rate,sourceName:up.name,evidence:lines.slice(Math.max(0,i-1),i+1).join(' | ').slice(0,180)
-     });
-     found++;
-    }
+  const render=async page=>{
+   const content=await page.getTextContent({normalizeWhitespace:true,disableCombineTextItems:false});
+   const positioned=(content.items||[]).map(x=>({str:String(x.str||'').trim(),x:Number(x.transform?.[4]||0),
+    y:Number(x.transform?.[5]||0),width:Number(x.width||0),h:Math.abs(Number(x.height||7))})).filter(x=>x.str);
+   positioned.sort((a,b)=>b.y-a.y||a.x-b.x);
+   const groups=[];
+   for(const item of positioned){
+    const last=groups.at(-1);
+    if(last&&Math.abs(last.y-item.y)<=Math.min(3.5,Math.max(2,item.h*.35)))last.parts.push(item);
+    else groups.push({y:item.y,parts:[item]});
    }
-  }
-  if(!found)issues.push({bankId:up.bankId,name:up.name,issue:'PDF accepted; no unique product/tenor/rate mapping was recognized automatically. Missing cells are -.'});
- }
- return {suggestions:suggested,issues};
+   return groups.map(g=>{
+    const ordered=g.parts.sort((a,b)=>a.x-b.x);let line='',right=0;
+    for(const token of ordered){
+     if(line){const gap=token.x-right;line+=gap>8?'  ':' '}
+     line+=token.str;right=Math.max(right,token.x+token.width);
+    }
+    return line;
+   }).join('\n');
+  };
+  layout=await pdfParse(file,{pagerender:render});
+ }catch(e){layoutIssue=String(e.message||e).slice(0,160)}
+ const text=String(plain?.text||'').slice(0,155000),layoutText=String(layout?.text||'').slice(0,155000);
+ const pages=plain?.numpages||layout?.numpages||0;
+ const readable=!!text.trim()||!!layoutText.trim();
+ return res.status(200).json({text,layoutText,pages,readable,
+  notice:readable?'Selectable text found. Rate tables will be matched by product and tenor.':
+   'No selectable text was found. This may be a scanned PDF; convert it using Screenshot → Searchable PDF, or use OCR.',
+  warnings:[plainIssue,layoutIssue].filter(Boolean)});
 }
 function uploadedSource(bank,uploads){
- const files=uploads.filter(u=>u.bankId===bank.id);
- const usable=files.filter(u=>u.text.trim());
- return {
-  id:bank.id,name:bank.name,url:'',documentUrl:'',sourceType:'Uploaded PDF accepted',
-  status:!files.length?'pdf_not_supplied':!usable.length?'pdf_unreadable':'uploaded_pdf',
-  documentDate:'',effectiveDate:'',publishedDate:'',
-  note:!files.length?'No PDF provided; rates shown -':
-   !usable.length?'Uploaded PDF accepted but no readable text; rates shown -':
-   'Uploaded PDF accepted as the source. No bank website lookup, date checking or document verification.',
-  // All supplied PDFs for this bank are accepted; never reject or order them by date.
-  text:usable.map(u=>u.text).join('\n\n'),
-  uploadedDocuments:files.map(u=>({name:u.name,readable:!!u.text.trim()}))
- };
+ const docs=uploads.filter(u=>u.bankId===bank.id);
+ const accepted=docs.filter(u=>String(u.text||u.layoutText||'').trim());
+ const raw=accepted.map(u=>String(u.text||u.layoutText||'')).join('\n\f\n').slice(0,240000);
+ return {id:bank.id,name:bank.name,sourceType:'User-uploaded PDF',status:docs.length?accepted.length?'uploaded_pdf':'pdf_unreadable':'pdf_not_supplied',
+  text:raw,documentDate:'',effectiveDate:'',publishedDate:'',documentUrl:'',url:'',
+  note:!docs.length?'No PDF attached to this bank':!accepted.length?'PDF attached but contains no selectable text; scanned PDF needs OCR':'PDF accepted without website or date verification',
+  uploadedDocuments:docs.map(u=>({name:u.name,readable:!!String(u.text||u.layoutText||'').trim(),
+   characters:String(u.text||'').length,layoutCharacters:String(u.layoutText||'').length,pages:Number(u.pages||0),
+   extractionNotice:String(u.notice||'').slice(0,160)}))};
 }
 function pdfOnlyRows(sources,asOf){
- const by=Object.fromEntries(sources.map(s=>[s.id,s])),records=[];
- for(const p of products)for(const tenor of p.tenors)for(const bank of banks){
-  const src=by[bank.id],peer=bank.id==='MTB'?p.name:p.peers[bank.id]||'N/A';
-  const result=peer!=='N/A'&&src?.text
-   ?deriveRate({...src,status:'uploaded_pdf'},p,bank,tenor,asOf):null;
-  const rate=result?.rate===null||result?.rate===undefined?null:Number(result.rate);
-  const matched=Number.isFinite(rate)&&rate>=0&&rate<=30;
-  records.push({
-   category:p.type,productId:p.id,product:p.name,tenor,bankId:bank.id,peerProduct:peer,
-   rate:matched?rate:null,status:matched?'verified':'pdf_missing',
-   note:matched?'Read directly from the uploaded PDF':
-    peer==='N/A'?'No comparable peer product mapped; - shown':
-    'Rate not identifiable in the uploaded PDF; - shown',
-   sourceUrl:src?.uploadedDocuments?.map(u=>u.name).join('; ')||'No PDF supplied',
-   effectiveDate:'',proposedRate:null
-  });
+ const lookup=Object.fromEntries(sources.map(s=>[s.id,s])),records=[];
+ for(const product of products)for(const tenor of product.tenors)for(const bank of banks){
+  const src=lookup[bank.id],peer=bank.id==='MTB'?product.name:product.peers[bank.id]||'N/A';
+  // Bank-specific parsers supplement the generic table reader, but never use web rates.
+  const found=peer==='N/A'||!src?.text?null:deriveRate({...src,status:'uploaded_pdf'},product,bank,tenor,asOf);
+  const rate=found?.rate===null||found?.rate===undefined?null:Number(found.rate);
+  const ok=Number.isFinite(rate)&&rate>=0&&rate<=30;
+  records.push({category:product.type,productId:product.id,product:product.name,tenor,bankId:bank.id,
+   peerProduct:peer,rate:ok?rate:null,status:peer==='N/A'?'product_na':ok?'verified':'pdf_missing',
+   note:ok?String(found.note||'Rate identified in supplied PDF'):'No unambiguous matching rate in supplied PDF',
+   evidence:ok?String(found.note||'Bank-specific PDF parser'):'',
+   sourceUrl:src?.uploadedDocuments?.map(x=>x.name).join('; ')||'No PDF supplied',
+   effectiveDate:'',proposedRate:null});
  }
  return records;
 }
-async function analyzeReport(req,res){
- const input=quoteJSON(await rawRequest(req,1_000_000)),asOf=String(input.asOf||todayDhaka());
- if(!/^\d{4}-\d{2}-\d{2}$/.test(asOf))throw error('Invalid report label date');
- const uploads=Array.isArray(input.uploads)?input.uploads.slice(0,24).map(x=>({
-  bankId:String(x.bankId||'').slice(0,16),name:String(x.name||'').slice(0,100),
-  text:String(x.text||'').slice(0,30000)
- })).filter(x=>banks.some(b=>b.id===x.bankId)&&/\.pdf$/i.test(x.name)):[];
- const sources=banks.map(b=>uploadedSource(b,uploads));
- const rows=pdfOnlyRows(sources,asOf);
- const evidence=evidenceSuggestions(uploads);
+function completePDFReview(uploads,asOf){
+ const sources=banks.map(b=>uploadedSource(b,uploads)),rows=pdfOnlyRows(sources,asOf);
+ // Read both original PDF text and coordinate-restored rows if available.
+ const datasets=[...uploads,...uploads.filter(u=>String(u.layoutText||'').trim()).map(u=>({
+  bankId:u.bankId,name:u.name+' (table layout)',text:u.layoutText
+ }))];
+ const evidence=analyzeUploadedPDFs(datasets,products,banks);
  const byKey=new Map(rows.map(r=>[r.productId+'|'+r.tenor+'|'+r.bankId,r]));
- const candidates=new Map();
- for(const cand of evidence.suggestions){
-  if(!candidates.has(cand.key))candidates.set(cand.key,[]);
-  candidates.get(cand.key).push(cand);
+ const grouped=new Map();
+ for(const c of evidence.candidates){
+  if(!grouped.has(c.key))grouped.set(c.key,[]);
+  grouped.get(c.key).push(c);
  }
- let conflicts=0,autoMatched=0;
- for(const [key,matches] of candidates){
-  const row=byKey.get(key);
-  if(!row||row.peerProduct==='N/A')continue;
-  const unique=[...new Set(matches.map(c=>c.rate.toFixed(3)))];
-  if(unique.length!==1||(row.status==='verified'&&Number(row.rate).toFixed(3)!==unique[0])){
-   row.rate=null;row.status='pdf_missing';
-   row.note='More than one rate matched this product/tenor in uploaded PDFs. - shown rather than guessing.';
-   conflicts++;continue;
-  }
-  if(row.status!=='verified'){
-   row.rate=matches[0].rate;row.status='verified';
-   row.note='Extracted from uploaded PDF '+matches[0].sourceName+' (product and tenor matched)';
-   autoMatched++;
+ let added=0,ambiguous=0;
+ for(const [k,list] of grouped){
+  const row=byKey.get(k);if(!row||row.peerProduct==='N/A')continue;
+  const possible=new Set(list.map(c=>Number(c.rate).toFixed(3)));
+  if(row.status==='verified')possible.add(Number(row.rate).toFixed(3));
+  if(possible.size>1){
+   row.rate=null;row.status='review';row.note='Conflicting rates or deposit amount brackets; select the correct rate from the PDF';
+   row.evidence=list.slice(0,4).map(c=>c.evidence).join(' | ').slice(0,350);
+   row.choices=[...possible].map(Number);ambiguous++;
+  }else if(possible.size===1&&row.status!=='verified'){
+   const picked=list[0];row.rate=picked.rate;row.status='verified';
+   row.note=picked.method+' · '+picked.sourceName+' · page '+picked.page;
+   row.evidence=picked.evidence;row.sourceUrl=picked.sourceName;added++;
   }
  }
- if(conflicts)evidence.issues.push({bankId:'MULTIPLE',name:'Conflicting PDF matches',issue:conflicts+' ambiguous product/tenor matches show - instead of assuming a rate.'});
- const verified=rows.filter(x=>x.status==='verified').length;
- const stats={
-  verified,missing:rows.filter(x=>x.status==='pdf_missing').length,
-  tenorMissing:0,uploadedFiles:uploads.length,autoMatched,conflicts,
-  screenshotSuggestions:0
- };
- return res.status(200).json({
-  asOf,rows,sources,stats,issues:evidence.issues,suggestions:[],stateless:true,
-  sourcePolicy:'uploaded-pdfs-trusted-no-date-or-external-verification'
+ const totals={verified:rows.filter(r=>r.status==='verified').length,
+  missing:rows.filter(r=>r.status==='pdf_missing'&&r.peerProduct!=='N/A').length,
+  notComparable:rows.filter(r=>r.status==='product_na').length,
+  ambiguous:rows.filter(r=>r.status==='review').length,
+  uploadedFiles:uploads.length,genericMatched:added};
+ const byBank=banks.map(b=>{
+  const records=rows.filter(r=>r.bankId===b.id),docs=uploads.filter(u=>u.bankId===b.id);
+  return {bankId:b.id,name:b.name,uploaded:docs.length,characters:docs.reduce((sum,u)=>sum+String(u.text||u.layoutText||'').length,0),
+   pages:docs.reduce((sum,u)=>sum+Number(u.pages||0),0),
+   matched:records.filter(r=>r.status==='verified').length,
+   missing:records.filter(r=>r.status==='pdf_missing'&&r.peerProduct!=='N/A').length,
+   ambiguous:records.filter(r=>r.status==='review').length,
+   preview:docs.map(u=>String(u.text||u.layoutText||'').slice(0,3500)).join('\n\n').slice(0,6500),
+   files:docs.map(u=>u.name),issues:evidence.warnings.filter(w=>w.bankId===b.id).slice(0,5)};
  });
+ const errors=evidence.warnings.slice(0,60);
+ // Report review should not send hundreds of KB of full PDF text back to the browser.
+ const safeSources=sources.map(({text,...source})=>({...source,textLength:text.length}));
+ return {asOf,rows,sources:safeSources,stats:totals,byBank,issues:errors,
+  diagnostics:evidence.stats.slice(0,36),sourcePolicy:'uploaded-PDFs-only-no-website-or-date-check',stateless:true};
 }
-
+async function analyzeReport(req,res){
+ const input=quoteJSON(await rawRequest(req,3_100_000)),asOf=String(input.asOf||todayDhaka());
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(asOf))throw error('Enter a valid presentation date');
+ const uploads=Array.isArray(input.uploads)?input.uploads.slice(0,26).map(x=>({
+  bankId:String(x.bankId||'').slice(0,25),name:String(x.name||'').slice(0,110),
+  text:String(x.text||'').slice(0,160000),layoutText:String(x.layoutText||'').slice(0,160000),
+  pages:Math.min(200,Math.max(0,Number(x.pages)||0)),notice:String(x.notice||'').slice(0,200)
+ })).filter(x=>banks.some(b=>b.id===x.bankId)&&/\.pdf$/i.test(x.name)) : [];
+ const result=completePDFReview(uploads,asOf);
+ return res.status(200).json(result);
+}
 async function downloadExact(req,res){
  const input=quoteJSON(await rawRequest(req,1_900_000));
  const date=String(input.asOf||'');
@@ -466,7 +455,7 @@ export default async function handler(req,res){
  res.setHeader('Cache-Control','no-store');
  try{
   const action=String(req.query.action||'health').split('&')[0];
-  if(action==='health')return res.status(200).json({ok:true,stateless:true,archive:false,authRequired:false,bankWebsiteSearch:false,pdfOnly:true,dateVerification:false,sourceAcceptedOnUpload:true,version:'3.3'});
+  if(action==='health')return res.status(200).json({ok:true,stateless:true,archive:false,authRequired:false,bankWebsiteSearch:false,pdfOnly:true,dateVerification:false,sourceAcceptedOnUpload:true,version:'4.0'});
   if(action==='review'&&req.method==='POST')return await analyzeReport(req,res);
   if(action==='ppt-exact'&&req.method==='POST')return await downloadExact(req,res);
   if(action==='ppt'&&req.method==='POST')return res.status(410).json({error:'Exact original templates required. Please use the upload-and-review flow on the website.'});
