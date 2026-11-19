@@ -1,68 +1,140 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MTB ALCO Offline Tool — Download</title>
-  <meta name="description" content="Download the offline MTB ALCO peer-bank deposit rate presentation generator for Windows.">
-  <style>
-    :root{font-family:system-ui,-apple-system,'Segoe UI',Arial,sans-serif;color:#173d32;background:#f7faf8}
-    *{box-sizing:border-box}
-    body{margin:0}
-    main{max-width:790px;margin:0 auto;padding:68px 22px 45px}
-    h1{font-size:clamp(28px,5vw,39px);letter-spacing:-.04em;line-height:1.12;margin:0 0 15px}
-    h2{font-size:18px;margin:0 0 14px}
-    p{font-size:15px;line-height:1.7;color:#587169;margin:0 0 21px}
-    .eyebrow{font-size:11px;letter-spacing:.13em;text-transform:uppercase;font-weight:800;color:#166e58;margin-bottom:15px}
-    .panel{background:white;border:1px solid #e1eae5;border-radius:14px;padding:26px 26px;margin-top:26px}
-    .actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:25px 0}
-    .button{display:inline-block;text-decoration:none;border-radius:10px;padding:14px 20px;font-size:14px;font-weight:750;background:#126454;color:white}
-    .button:focus,.button:hover{background:#0d5144}
-    .button.secondary{background:white;color:#165a4b;border:1px solid #bcd2c7}
-    .button.secondary:hover{background:#ecf6ef}
-    ul{padding-left:20px;margin:0;color:#2d5144;font-size:14px;line-height:1.9}
-    .example{border:1px solid #dce7e1;background:#f5faf7;padding:13px 16px;border-radius:10px;display:flex;align-items:center;gap:13px;flex-wrap:wrap;margin:16px 0}
-    .tag{font-size:12px;background:#fff;border:1px solid #bfd6ca;border-radius:7px;padding:8px 11px;font-weight:700}
-    .small{font-size:12px;color:#6c8278}
-    footer{font-size:12px;color:#84958d;padding-top:20px}
-    footer a{color:#276c57}
-  </style>
-</head>
-<body>
-<main>
-  <div class="eyebrow">MTB peer deposit rate monitoring · Offline desktop application</div>
-  <h1>Create ALCO PowerPoints without a website.</h1>
-  <p>Use the Windows app to attach bank PDF rate sheets, review extracted figures, and generate editable presentations using the original FDR and DPS templates. No login, website access, or internet connection is needed once the app is downloaded.</p>
-  <div class="actions">
-    <a class="button" href="https://github.com/AkibNizum/mtb-peer-rate-monitor/releases/download/offline-v1.1.0/MTB_ALCO_Offline_Windows_v1_1.zip">Download Windows App (v1.1)</a>
-    <a class="button secondary" href="https://github.com/AkibNizum/mtb-peer-rate-monitor/releases">Other versions / downloads</a>
-  </div>
-  <section class="panel">
-    <h2>Bank-by-bank PDF upload</h2>
-    <p class="small">Every bank has its own Upload PDF button inside the app. Files cannot accidentally be assigned to a different bank.</p>
-    <div class="example"><strong>MTB</strong><span class="tag">Upload PDF</span><span class="small">Selected filename appears here</span></div>
-    <div class="example"><strong>Eastern Bank</strong><span class="tag">Upload PDF</span><span class="small">Selected filename appears here</span></div>
-    <p class="small">Six customizable peer slots are available without altering the original slide layouts.</p>
-  </section>
-  <section class="panel">
-    <h2>How to use it</h2>
-    <ul>
-      <li>Download and unzip the Windows package.</li>
-      <li>Run <strong>MTB_ALCO_Tool.exe</strong> from the extracted folder.</li>
-      <li>Click Upload PDF beside each bank, then Extract Rates.</li>
-      <li>Correct unmatched figures if necessary, then Generate Original PowerPoints.</li>
-    </ul>
-  </section>
-  <section class="panel">
-    <h2>Included tools</h2>
-    <ul>
-      <li>Original-format, editable FDR and DPS PowerPoint reports</li>
-      <li>Change or remove peer banks, with comparable-product mappings</li>
-      <li>Screenshot-to-searchable-PDF and text-to-extractable-PDF</li>
-      <li>PDF-only data sources; missing rates shown as <strong>–</strong>, Proposed Rate blank</li>
-    </ul>
-  </section>
-  <footer>Public download. No login or user account required. <a href="https://github.com/AkibNizum/mtb-peer-rate-monitor">Source repository</a></footer>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#145d50"><title>MTB Peer Bank Rate Tool</title>
+<style>
+*{box-sizing:border-box}body{margin:0;color:#203b35;background:#f6f8f7;font:14px/1.5 system-ui,Segoe UI,Arial,sans-serif}
+header{border-bottom:1px solid #d7e1dc;background:white}.wrap{max-width:1140px;margin:auto;padding:0 22px}header .wrap{display:flex;align-items:center;justify-content:space-between;padding-top:17px;padding-bottom:17px;gap:10px}
+h1{font-size:23px;margin:0;color:#155e50}h2{font-size:19px;margin:0 0 8px}h3{font-size:14px;margin:16px 0 8px}p{margin:5px 0 14px}small,.muted{color:#657c73}main{padding-top:26px;padding-bottom:45px}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:17px}.tabs button{border:1px solid #c5d4cc;background:#fff;color:#365a4c;cursor:pointer;border-radius:7px;padding:10px 14px;font-weight:650}.tabs button.active{background:#125e50;border-color:#125e50;color:white}
+.panel{background:white;border:1px solid #dbe5df;border-radius:10px;padding:22px;margin-bottom:14px}.hidden{display:none!important}
+button,input,select,textarea{font:inherit}button{cursor:pointer;border-radius:6px;border:1px solid #b8d0c4;background:#fff;padding:8px 12px;color:#22594c}button:hover{background:#edf6f1}button:disabled{opacity:.5;cursor:default}.primary{background:#155f50;color:white;font-weight:700;border-color:#155f50;padding:12px 20px}.primary:hover{background:#0b4c3f;color:white}
+input:not([type=checkbox]):not([type=file]),select,textarea{background:white;border:1px solid #bfcfc6;border-radius:6px;padding:8px;color:#263e34}input[type=date]{min-width:160px}.inline{display:flex;flex-wrap:wrap;gap:14px;align-items:center}.date-line{margin:13px 0 21px}.date-line label{font-weight:600}
+.bank-grid{display:grid;gap:7px}.bank-row{display:grid;grid-template-columns:29px 210px 115px minmax(0,1fr) 75px;align-items:center;gap:10px;padding:11px 12px;border:1px solid #e0e9e2;border-radius:7px}.bank-row:nth-child(odd){background:#f9fbfa}.bank-row .bank-name{font-weight:650}.bank-row .filename{color:#617a6e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}.bank-row input[type=file]{display:none}
+.action-bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:20px 0 8px}.notice{background:#f4f8f4;border:1px solid #d9e8da;border-radius:7px;padding:10px 12px;color:#506b5e;margin-top:16px}.warn{color:#8b5714;background:#fff7e8;border-color:#efdfbb}.error{color:#ad3b31!important}.status{min-height:22px;margin-top:10px;color:#3d6858}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:15px 0}.metric{border:1px solid #dce8de;border-radius:8px;padding:10px}.metric strong{display:block;font-size:22px;color:#0d604d}
+.file-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.file-card{border:1px solid #dae4dc;padding:12px;border-radius:8px}.file-card b{font-size:13px}.file-card .muted{font-size:12px}.file-card details{font-size:12px;margin-top:8px}.file-card pre{white-space:pre-wrap;max-height:210px;overflow:auto;background:#f7f9f6;border:1px solid #edf1ef;padding:9px;font:11px/1.4 ui-monospace,monospace}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}.toolbar select{max-width:230px}.table-scroller{overflow:auto;max-height:520px;border:1px solid #d8e4dd;border-radius:7px}table{border-collapse:collapse;min-width:875px;width:100%;font-size:12px}th{background:#e9f1ec;text-align:left;position:sticky;top:0;z-index:1}td,th{border-bottom:1px solid #e4ebe6;padding:8px;vertical-align:middle}td input{width:90px;min-width:72px}td .missing{color:#9a6d2c}.row-note{display:block;color:#658075;font-size:11px;max-width:300px}tr:nth-child(even){background:#fbfcfb}
+.pdfDropZone{border:2px dashed #a7c5b8;background:#f7faf7;border-radius:10px;min-height:142px;display:grid;place-items:center;text-align:center;gap:4px;padding:18px}.pdfDropZone.dragging{border-color:#165e4f;background:#e9f5ed}
+.pdfToolsRow,.textPdfForm,.textPdfRow,.textPdfActions,.pdfFooterActions{display:flex;gap:15px;align-items:center;flex-wrap:wrap;margin-top:17px}.pdfToolsRow>div{flex:1}.pdfToolsRow label,.textPdfForm label{display:block;font-size:12px;font-weight:600}.pdfPreviews{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:15px}.pdfImageCard{display:flex;align-items:center;gap:12px;border:1px solid #d7e4dc;padding:10px;border-radius:7px;min-width:0}.pdfImagePreview{width:75px;height:85px;display:grid;place-items:center;background:#e8efe9;flex-shrink:0}.pdfImagePreview img{max-height:82px;max-width:73px}.pdfImageDetails{min-width:0;flex:1}.pdfImageName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}.pdfImageDetails small{font-size:11px}.pdfPageActions{display:grid;gap:4px}.pdfPageActions button{padding:1px 8px}.pdfEmpty{padding:25px;text-align:center;grid-column:1/-1;color:#789080;border:1px dashed #c9d8cf}
+.textPdfForm input{width:100%}.textPdfForm>div{min-width:180px;flex:1}.textPdfForm>div:last-child{flex:0 0 140px}.textPdfEditor{width:100%;min-height:280px;resize:vertical;font:14px/1.6 Segoe UI,Arial,sans-serif}.textPdfCount,.pdfCounter{font-size:12px;color:#698276}.pdfFooterActions{justify-content:flex-end}.pdfFileInput{width:100%;font-size:12px}
+@media(max-width:700px){.wrap{padding:0 13px}main{padding-top:15px}.panel{padding:14px}.bank-row{grid-template-columns:24px minmax(110px,1fr) 100px;gap:5px}.bank-row .filename{grid-column:2/4}.bank-row .clear{grid-column:3}.metrics,.file-overview,.pdfPreviews{grid-template-columns:1fr 1fr}.metric strong{font-size:18px}.table-scroller{max-height:450px}}
+@media(max-width:460px){.file-overview,.pdfPreviews{grid-template-columns:1fr}}
+</style></head><body>
+<header><div class="wrap"><h1>MTB Peer Bank Rate Tool</h1><small>PDF input only · No login · Original PPT templates</small></div></header>
+<main class="wrap">
+<div class="tabs" role="tablist" aria-label="Tool"><button id="tabPpt" class="active" onclick="switchTab('ppt')">ALCO PowerPoint</button><button id="tabPdf" onclick="switchTab('pdf')">Screenshots → Searchable PDF</button><button id="tabTextPdf" onclick="switchTab('text')">Text → PDF</button></div>
+<section id="pptTool">
+<div class="panel" id="stepOne"><h2>1. Upload bank PDFs</h2>
+<p class="muted">Upload rate sheets beside each bank. Only your PDFs are used; no websites or source-date checks. MTB is the reference bank. Unmatched rates become <b>-</b>; Proposed Rate stays blank.</p>
+<div class="inline date-line"><label for="asOf">Presentation date</label><input type="date" id="asOf"><span class="muted">For the slide date and filename only</span></div>
+<div id="bankGrid" class="bank-grid"></div>
+<div class="action-bar"><button class="primary" id="readBtn" onclick="readPDFs()">1. Read PDFs &amp; Match Rates</button><span id="readStatus" class="status" role="status"></span></div>
+<div class="notice">Every peer can be unchecked to leave it out of the report. The original PPT has six fixed peer-bank columns; this version retains those columns and shows <b>-</b> when a bank is not selected.</div>
+</div>
+<div class="panel hidden" id="stepTwo"><h2>2. Review extracted rates</h2>
+<div id="metricGrid" class="metrics"></div>
+<div id="fileOverview" class="file-overview"></div>
+<div class="notice warn" id="reviewWarning">Check any disputed rates before downloading. A matched rate is not necessarily the correct deposit-size bracket.</div>
+<div class="toolbar"><label>Bank <select id="filterBank" onchange="renderRates()"></select></label><label>Product <select id="filterProduct" onchange="renderRates()"></select></label><label>Type <select id="filterType" onchange="renderRates()"><option value="all">FDR + DPS</option><option value="FDR">FDR</option><option value="DPS">DPS</option></select></label><label><input id="unresolvedOnly" type="checkbox" onchange="renderRates()"> Only missing / disputed</label></div>
+<p class="muted">Enter a confirmed rate in the Rate field to correct a cell. Blank fields are exported as <b>-</b>. Original PPT formatting is unchanged.</p>
+<div class="table-scroller"><table><thead><tr><th>Bank</th><th>MTB product</th><th>MTB tenor</th><th>Peer product</th><th>Rate (%)</th><th>Extraction</th></tr></thead><tbody id="ratesBody"></tbody></table></div>
+<p class="muted" id="tableCount"></p>
+<div class="action-bar"><button onclick="backToFiles()">Back to PDFs</button><button class="primary" id="pptBtn" onclick="generatePPT()">2. Generate Original PowerPoints</button><span id="pptStatus" class="status" role="status"></span></div>
+</div>
+</section>
+<section id="pdfTool" class="hidden"><div class="panel"><h2>Screenshots → Searchable PDF</h2><p>Paste screenshots using Ctrl+V, or choose PNG/JPG images. They are not saved by the website.</p>
+<div id="pdfDropZone" class="pdfDropZone" tabindex="0" role="button">Click here and press <b>Ctrl+V</b> to paste a screenshot.<small>Or drag images here.</small></div>
+<div class="pdfToolsRow"><div><label for="pdfChoose">Choose screenshots</label><input id="pdfChoose" class="pdfFileInput" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" multiple></div><div><label for="pdfPaperSize">PDF page size</label><select id="pdfPaperSize"><option value="a4">A4</option><option value="match">Match screenshot</option></select></div></div>
+<div class="pdfToolsRow"><strong id="pdfCounter" class="pdfCounter">0 screenshots ready</strong><span class="muted">Move pages with ↑ ↓</span></div><div id="pdfPreviews" class="pdfPreviews"></div>
+<div class="pdfFooterActions"><button id="pdfClear" disabled>Clear all</button><button id="pdfDownload" class="primary" disabled>Generate Searchable PDF</button></div><div id="pdfStatus" class="status"></div>
+</div></section>
+<section id="textPdfTool" class="hidden"><div class="panel"><h2>Text → Extractable PDF</h2><p>Paste text to create a searchable PDF locally in your browser.</p>
+<div class="textPdfForm"><div><label for="textPdfTitle">Title</label><input id="textPdfTitle" type="text" placeholder="Optional"></div><div><label for="textPdfFileName">Filename</label><input id="textPdfFileName" type="text" value="Bank_Rate_Notes"></div><div><label for="textPdfSize">Text size</label><select id="textPdfSize"><option value="10">10</option><option value="11" selected>11</option><option value="12">12</option><option value="14">14</option></select></div></div>
+<p><label for="textPdfBody">Paste text</label></p><textarea id="textPdfBody" class="textPdfEditor" maxlength="120000" placeholder="Paste your text here..."></textarea>
+<div class="textPdfRow"><span id="textPdfCount" class="textPdfCount">0 characters</span><button id="textPdfGenerate" class="primary">Generate Text PDF</button></div><div id="textPdfStatus" class="status"></div>
+</div></section>
+<footer><small>Prepared as a public tool. Uploaded PDFs and generated presentations are processed in memory and not saved to the website.</small></footer>
 </main>
-</body>
-</html>
+<script>
+const $=id=>document.getElementById(id);
+const BANKS=[['MTB','MTB (base)'],['EBL','Eastern Bank'],['PRIME','Prime Bank'],['BRAC','BRAC Bank'],['DHAKA','Dhaka Bank'],['CITY','City Bank'],['UCB','United Commercial Bank']];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[c]));
+let reviewed=null, uploaded=[],busy=false;
+function switchTab(tab){for(const k of ['ppt','pdf','text']){$(k==='ppt'?'pptTool':k==='pdf'?'pdfTool':'textPdfTool').classList.toggle('hidden',tab!==k);$('tab'+(k==='ppt'?'Ppt':k==='pdf'?'Pdf':'TextPdf')).classList.toggle('active',tab===k)}if(tab==='pdf')$('pdfDropZone').focus({preventScroll:true});if(location.hash!=='#'+tab)history.replaceState(null,'','#'+tab)}
+$('asOf').value=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dhaka',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+$('bankGrid').innerHTML=BANKS.map(([id,name],i)=>`<div class="bank-row"><label><input type="checkbox" id="use-${id}" ${i===0?'checked disabled':'checked'} title="Include in report"></label><span class="bank-name">${esc(name)}</span><button type="button" onclick="$('file-${id}').click()">Upload PDF</button><input type="file" id="file-${id}" data-bank="${id}" accept=".pdf,application/pdf" multiple onchange="displayFiles('${id}')"><span id="name-${id}" class="filename">No PDF attached</span><button class="clear" type="button" onclick="clearFiles('${id}')">Clear</button></div>`).join('');
+function displayFiles(id){const f=[...$('file-'+id).files];$('name-'+id).textContent=f.length?f.map(x=>x.name).join('; '):'No PDF attached';}
+function clearFiles(id){$('file-'+id).value='';displayFiles(id);}
+async function readServer(file){if(file.size>3_000_000)throw Error('PDF exceeds the 3 MB server limit. Use a smaller or split PDF.');const res=await fetch('/api?action=extract',{method:'POST',headers:{'content-type':'application/pdf'},body:file});const data=await res.json().catch(()=>({}));if(!res.ok)throw Error(data.error||'Could not read PDF');return data;}
+async function readLocally(file){
+ let pdfjs;try{pdfjs=await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs')}catch{pdfjs=await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.mjs')}
+ pdfjs.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
+ const pdf=await pdfjs.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
+ let text='',layoutText='';for(let i=1;i<=Math.min(pdf.numPages,70);i++){
+  const page=await pdf.getPage(i),items=(await page.getTextContent()).items.filter(x=>x.str?.trim());
+  text+='\n'+items.map(x=>x.str).join(' ');
+  const ordered=items.map(x=>({s:String(x.str).trim(),x:Number(x.transform?.[4]||0),y:Number(x.transform?.[5]||0)})).sort((a,b)=>b.y-a.y||a.x-b.x);
+  let group=[],groups=[],currentY=null;for(const item of ordered){if(currentY===null||Math.abs(item.y-currentY)>2.9){if(group.length)groups.push(group);group=[];currentY=item.y}group.push(item)}if(group.length)groups.push(group);
+  layoutText+='\n\f\n'+groups.map(g=>g.map(x=>x.s).join('  ')).join('\n');
+ }
+ await pdf.destroy();return {text,layoutText,pages:pdf.numPages,notice:'Selectable text extracted in the browser'};
+}
+async function readOne(file){
+ let first=null,lastError=null;
+ if(file.size<=3_000_000){try{first=await readServer(file)}catch(e){lastError=e}}
+ if(first?.text?.trim()?.length>=70&&first?.layoutText?.trim()?.length>=70)return first;
+ try{const local=await readLocally(file);if((local.text.length+local.layoutText.length)>String(first?.text||'').length)return local}catch(e){lastError=e}
+ if(first)return first;
+ throw lastError||Error('PDF cannot be read');
+}
+function setBusy(value){busy=value;$('readBtn').disabled=value;$('pptBtn').disabled=value;}
+function errorMessage(id,text){$(id).textContent=text;$(id).classList.add('error')}
+async function readPDFs(){
+ if(busy)return;setBusy(true);reviewed=null;uploaded=[];$('readStatus').classList.remove('error');$('readStatus').textContent='Reading PDFs...';
+ try{
+  const jobs=BANKS.filter(([id])=>$('use-'+id).checked).flatMap(([id])=>[...$('file-'+id).files].map(file=>({id,file})));
+  if(!jobs.length)throw Error('Upload at least one bank PDF to continue.');
+  if(jobs.length>24)throw Error('Use no more than 24 PDF files in one report.');
+  for(let i=0;i<jobs.length;i++){
+   const {id,file}=jobs[i];$('readStatus').textContent=`Reading ${i+1}/${jobs.length}: ${file.name}`;
+   try{const data=await readOne(file);uploaded.push({bankId:id,name:file.name,text:data.text||'',layoutText:data.layoutText||'',pages:data.pages||0,notice:data.notice||''});}
+   catch(e){uploaded.push({bankId:id,name:file.name,text:'',layoutText:'',pages:0,notice:'FAILED: '+e.message})}
+  }
+  $('readStatus').textContent='Matching bank products and MTB tenors...';
+  const response=await fetch('/api?action=review',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({asOf:$('asOf').value,uploads:uploaded})});
+  const data=await response.json().catch(()=>({}));if(!response.ok)throw Error(data.error||'Rate matching service failed');
+  reviewed=data;
+  const excluded=new Set(BANKS.filter(([id])=>!$('use-'+id).checked).map(([id])=>id));
+  reviewed.rows.forEach(row=>{if(excluded.has(row.bankId)){row.rate=null;row.status='product_na';row.note='Bank excluded from this report'}});
+  showReview();$('stepOne').classList.add('hidden');$('stepTwo').classList.remove('hidden');$('stepTwo').scrollIntoView({behavior:'smooth'});
+ }catch(e){errorMessage('readStatus',e.message)}finally{setBusy(false)}
+}
+function showReview(){
+ const z=reviewed.stats;
+ $('metricGrid').innerHTML=[['Matched rates',z.verified],['Missing',z.missing],['Need review',z.ambiguous],['PDFs uploaded',z.uploadedFiles]].map(([k,v])=>`<div class="metric"><strong>${v}</strong><small>${k}</small></div>`).join('');
+ $('fileOverview').innerHTML=(reviewed.byBank||[]).filter(x=>x.uploaded).map(x=>`<div class="file-card"><b>${esc(x.name)}</b><div class="muted">${x.uploaded} PDF(s) · ${x.characters.toLocaleString()} text characters · ${x.matched} matched · ${x.ambiguous} disputed</div><small>${esc(x.files.join(', '))}</small><details><summary>View extracted PDF text</summary><pre>${esc(x.preview||'No readable text')}</pre></details>${x.issues?.length?`<small class="error">${esc(x.issues.map(i=>i.issue).slice(0,2).join('; '))}</small>`:''}</div>`).join('');
+ if(!z.verified)$('reviewWarning').textContent='No rates were matched automatically. Open “View extracted PDF text” to see whether the PDF is readable, then enter the confirmed rates below before generating your PPT.';
+ else $('reviewWarning').textContent='Review disputed cells and amount brackets. Confirmed rates can be corrected in the Rate column; unmatched rates will be -.';
+ $('filterBank').innerHTML='<option value="all">All banks</option>'+BANKS.map(([id,name])=>`<option value="${id}">${esc(name)}</option>`).join('');
+ $('filterProduct').innerHTML='<option value="all">All products</option>'+[...new Map(reviewed.rows.map(r=>[r.productId,r.product])).entries()].map(([id,name])=>`<option value="${id}">${esc(name)}</option>`).join('');
+ renderRates();
+}
+function renderRates(){if(!reviewed)return;const bank=$('filterBank').value,product=$('filterProduct').value,type=$('filterType').value,unresolved=$('unresolvedOnly').checked;
+ const chosen=reviewed.rows.filter(r=>(bank==='all'||r.bankId===bank)&&(product==='all'||r.productId===product)&&(type==='all'||r.category===type)&&(!unresolved||['pdf_missing','review'].includes(r.status))&&r.status!=='product_na');
+ $('ratesBody').innerHTML=chosen.slice(0,220).map(r=>{const ix=reviewed.rows.indexOf(r);return `<tr><td>${esc(r.bankId)}</td><td>${esc(r.product)}</td><td>${esc(r.tenor)}</td><td>${esc(r.peerProduct)}</td><td><input type="number" min="0" max="30" step="0.001" data-index="${ix}" value="${Number.isFinite(r.rate)?r.rate:''}" placeholder="-"></td><td>${r.status==='verified'?'Matched':r.status==='review'?'<span class="missing">Disputed</span>':'<span class="missing">-</span>'}<small class="row-note" title="${esc(r.evidence||r.note)}">${esc((r.evidence||r.note||'').slice(0,78))}</small></td></tr>`}).join('');
+ $('tableCount').textContent=`Showing ${Math.min(220,chosen.length)} of ${chosen.length} matching rate cells. Use the filters to find specific products.`;
+ document.querySelectorAll('#ratesBody input[data-index]').forEach(input=>input.addEventListener('change',()=>{const row=reviewed.rows[Number(input.dataset.index)],n=Number(input.value);if(input.value.trim()&&Number.isFinite(n)&&n>=0&&n<=30){row.rate=n;row.status='uploaded_reviewed';row.note='Manually confirmed from uploaded PDF'}else{row.rate=null;row.status='pdf_missing';row.note='No rate entered'};renderRates()}));
+}
+function backToFiles(){$('stepTwo').classList.add('hidden');$('stepOne').classList.remove('hidden');$('stepOne').scrollIntoView({behavior:'smooth'})}
+async function generatePPT(){if(!reviewed||busy)return;const completed=reviewed.rows.filter(r=>r.status==='verified'||r.status==='uploaded_reviewed').length;
+ if(!completed&&!confirm('No rate values are populated. Download an all-dash report anyway?'))return;
+ setBusy(true);$('pptStatus').classList.remove('error');$('pptStatus').textContent='Generating original-format presentations...';
+ try{const res=await fetch('/api?action=ppt-exact',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({asOf:reviewed.asOf,records:reviewed.rows,sources:reviewed.sources})});if(!res.ok){const e=await res.json().catch(()=>({}));throw Error(e.error||'PPT generation failed')}
+ const blob=await res.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='MTB_ALCO_Peer_Rates_'+reviewed.asOf+'.zip';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),18000);
+ $('pptStatus').textContent='Download ready: original FDR PPT, original DPS PPT and source audit.';
+ }catch(e){errorMessage('pptStatus',e.message)}finally{setBusy(false)}
+}
+switchTab(['ppt','pdf','text'].includes(location.hash.slice(1))?location.hash.slice(1):'ppt');
+</script><script src="/pdf-generator.js" defer></script><script src="/text-pdf.js" defer></script>
+</body></html>
