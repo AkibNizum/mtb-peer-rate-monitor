@@ -1,0 +1,90 @@
+name: Build MTB ALCO Offline Windows App
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "desktop-offline/source-v1.1.tar.xz.b64"
+      - ".github/workflows/build-offline-windows.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout code and original template files
+        uses: actions/checkout@v4
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Restore original offline application source and PPTX files
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -Force -ItemType Directory -Path "desktop-offline\build\templates" | Out-Null
+          $encoded = [System.IO.File]::ReadAllText("desktop-offline\source-v1.1.tar.xz.b64").Trim()
+          [System.IO.File]::WriteAllBytes("desktop-offline\source.tar.xz", [System.Convert]::FromBase64String($encoded))
+          tar -xJf "desktop-offline\source.tar.xz" -C "desktop-offline\build"
+          @'
+          import base64,re
+          from pathlib import Path
+          for kind in ("fdr","dps"):
+              s=Path(f"api/templates/{kind}.js").read_text(encoding="utf-8")
+              m=re.search(r'export const \w+_TEMPLATE = "([A-Za-z0-9+/=]+)"',s)
+              assert m, f"Missing original {kind} PowerPoint template"
+              destination=Path("desktop-offline/build/templates")/f"MTB_{kind.upper()}_original.pptx"
+              destination.write_bytes(base64.b64decode(m.group(1)))
+              print(destination,destination.stat().st_size)
+          '@ | Set-Content -Encoding UTF8 "restore_templates.py"
+          python restore_templates.py
+      - name: Install desktop build dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r desktop-offline/build/requirements.txt pyinstaller
+      - name: Bundle offline Tesseract OCR
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tess = "C:\Program Files\Tesseract-OCR"
+          if (-not (Test-Path "$tess\tesseract.exe")) {
+            choco install tesseract --yes --no-progress --limit-output
+          }
+          if (-not (Test-Path "$tess\tesseract.exe")) {
+            throw "Tesseract OCR not present. A portable app must include offline screenshot OCR."
+          }
+          Write-Host "Using Tesseract OCR: $tess"
+      - name: Build portable app with original PowerPoint templates
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-Location "desktop-offline\build"
+          python -m PyInstaller --clean --noconfirm --windowed --onedir --name MTB_ALCO_Tool --add-data "templates;templates" --collect-all fitz --collect-all pymupdf app.py
+          $target = "dist\MTB_ALCO_Tool\_internal\tesseract"
+          New-Item -Force -ItemType Directory -Path $target | Out-Null
+          Copy-Item "C:\Program Files\Tesseract-OCR\*" $target -Recurse -Force
+          if (-not (Test-Path "dist\MTB_ALCO_Tool\MTB_ALCO_Tool.exe")) { throw "EXE not generated" }
+          if (-not (Test-Path "$target\tesseract.exe")) { throw "OCR engine not bundled" }
+          Copy-Item README_START_HERE.txt "dist\MTB_ALCO_Tool\README_START_HERE.txt"
+          Copy-Item VERSION.txt "dist\MTB_ALCO_Tool\VERSION.txt"
+          Compress-Archive -Path "dist\MTB_ALCO_Tool" -DestinationPath "../../MTB_ALCO_Offline_Windows_v1_1.zip" -CompressionLevel Optimal -Force
+      - name: Upload ready-to-run Windows ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: MTB_ALCO_Offline_Windows_v1_1
+          path: MTB_ALCO_Offline_Windows_v1_1.zip
+      - name: Publish public Windows download
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          if (gh release view offline-v1.1.0 --repo $env:GITHUB_REPOSITORY 2>$null) {
+            gh release upload offline-v1.1.0 MTB_ALCO_Offline_Windows_v1_1.zip --clobber --repo $env:GITHUB_REPOSITORY
+          } else {
+            gh release create offline-v1.1.0 MTB_ALCO_Offline_Windows_v1_1.zip --title "MTB ALCO Offline Tool v1.1 - Bank PDF Buttons" --notes "Portable Windows app. Upload PDF beside each bank name, configurable peer banks, original FDR/DPS PowerPoints, searchable PDF tools, fully offline after installation." --repo $env:GITHUB_REPOSITORY
+          }
