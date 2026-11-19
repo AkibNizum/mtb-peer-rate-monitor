@@ -119,7 +119,7 @@ function sourceIndex(records){
   const key=r.productId+'|'+tenor(r.tenor)+'|'+r.bankId;
   if(!key.includes('|m')&&!key.includes('|d'))continue;
   const rVal=rateValue(r);
-  if(rVal)index.set(key,{...r,formatted:rVal});
+  if(rVal&&rVal!=='-')index.set(key,{...r,formatted:rVal});
  }
  return index;
 }
@@ -230,5 +230,15 @@ export async function generateExactReports(input){
   'Only genuine comparable peer products are eligible for population.',
   '',...results.flatMap(r=>r.log));
  zip.file('Official_Source_PDFs.txt',sourceLines.join('\n'));
+ const csvCell=value=>'"'+String(value??'').replace(/"/g,'""').replace(/[\r\n]+/g,' ').slice(0,600)+'"';
+ const auditRows=[['Bank','MTB product','MTB tenor','Peer product','Rate (%)','Status','Source PDF','Evidence']];
+ for(const row of input.records||[]){
+  if(!row||row.status==='product_na')continue;
+  auditRows.push([row.bankId,row.product,row.tenor,row.peerProduct,
+    ['verified','uploaded_reviewed'].includes(row.status)&&Number.isFinite(Number(row.rate))?Number(row.rate).toFixed(3):'-',
+    row.status,row.sourceUrl,row.evidence||row.note]);
+ }
+ zip.file('Rate_Extraction_Audit.csv',auditRows.map(row=>row.map(csvCell).join(',')).join('\r\n'));
+ 
  return zip.generateAsync({type:'nodebuffer',compression:'DEFLATE',compressionOptions:{level:6}});
 }
