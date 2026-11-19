@@ -20,7 +20,7 @@ input:not([type=checkbox]):not([type=file]),select,textarea{background:white;bor
 .textPdfForm input{width:100%}.textPdfForm>div{min-width:180px;flex:1}.textPdfForm>div:last-child{flex:0 0 140px}.textPdfEditor{width:100%;min-height:280px;resize:vertical;font:14px/1.6 Segoe UI,Arial,sans-serif}.textPdfCount,.pdfCounter{font-size:12px;color:#698276}.pdfFooterActions{justify-content:flex-end}.pdfFileInput{width:100%;font-size:12px}
 @media(max-width:700px){.wrap{padding:0 13px}main{padding-top:15px}.panel{padding:14px}.bank-row{grid-template-columns:24px minmax(110px,1fr) 100px;gap:5px}.bank-row .filename{grid-column:2/4}.bank-row .clear{grid-column:3}.metrics,.file-overview,.pdfPreviews{grid-template-columns:1fr 1fr}.metric strong{font-size:18px}.table-scroller{max-height:450px}}
 @media(max-width:460px){.file-overview,.pdfPreviews{grid-template-columns:1fr}}
-</style></head><body>
+.upload-xlsx{display:inline-flex;align-items:center;justify-content:center;gap:4px;border:1px solid #b8d0c4;background:#f8faf8;padding:10px 14px;border-radius:6px;color:#22594c;cursor:pointer;font-weight:600}.upload-xlsx input{display:none}.upload-xlsx:hover{background:#edf6f1}</style></head><body>
 <header><div class="wrap"><h1>MTB Peer Bank Rate Tool</h1><small>PDF input only · No login · Original PPT templates</small></div></header>
 <main class="wrap">
 <div class="tabs" role="tablist" aria-label="Tool"><button id="tabPpt" class="active" onclick="switchTab('ppt')">ALCO PowerPoint</button><button id="tabPdf" onclick="switchTab('pdf')">Screenshots → Searchable PDF</button><button id="tabTextPdf" onclick="switchTab('text')">Text → PDF</button></div>
@@ -32,15 +32,15 @@ input:not([type=checkbox]):not([type=file]),select,textarea{background:white;bor
 <div class="action-bar"><button class="primary" id="readBtn" onclick="readPDFs()">1. Read PDFs &amp; Match Rates</button><span id="readStatus" class="status" role="status"></span></div>
 <div class="notice">Every peer can be unchecked to leave it out of the report. The original PPT has six fixed peer-bank columns; this version retains those columns and shows <b>-</b> when a bank is not selected.</div>
 </div>
-<div class="panel hidden" id="stepTwo"><h2>2. Review extracted rates</h2>
+<div class="panel hidden" id="stepTwo"><h2>2. Review PDF → Excel rates</h2>
 <div id="metricGrid" class="metrics"></div>
 <div id="fileOverview" class="file-overview"></div>
 <div class="notice warn" id="reviewWarning">Check any disputed rates before downloading. A matched rate is not necessarily the correct deposit-size bracket.</div>
 <div class="toolbar"><label>Bank <select id="filterBank" onchange="renderRates()"></select></label><label>Product <select id="filterProduct" onchange="renderRates()"></select></label><label>Type <select id="filterType" onchange="renderRates()"><option value="all">FDR + DPS</option><option value="FDR">FDR</option><option value="DPS">DPS</option></select></label><label><input id="unresolvedOnly" type="checkbox" onchange="renderRates()"> Only missing / disputed</label></div>
-<p class="muted">Enter a confirmed rate in the Rate field to correct a cell. Blank fields are exported as <b>-</b>. Original PPT formatting is unchanged.</p>
+<p class="muted">Review extracted figures below, or download and edit the Excel workbook. Column H of Excel contains current rates; Proposed Rate remains blank. The original PowerPoint layout is not changed.</p>
 <div class="table-scroller"><table><thead><tr><th>Bank</th><th>MTB product</th><th>MTB tenor</th><th>Peer product</th><th>Rate (%)</th><th>Extraction</th></tr></thead><tbody id="ratesBody"></tbody></table></div>
 <p class="muted" id="tableCount"></p>
-<div class="action-bar"><button onclick="backToFiles()">Back to PDFs</button><button class="primary" id="pptBtn" onclick="generatePPT()">2. Generate Original PowerPoints</button><span id="pptStatus" class="status" role="status"></span></div>
+<div class="action-bar"><button onclick="backToFiles()">Back to PDFs</button><button id="excelBtn" onclick="downloadExcel()">Download Extracted Excel</button><label class="upload-xlsx">Use corrected Excel <input type="file" id="workbookUpload" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="showWorkbookName()"></label><button class="primary" id="pptBtn" onclick="generatePPT()">3. Generate PowerPoints</button><span id="pptStatus" class="status" role="status"></span></div><p class="muted" id="workbookName">The PowerPoint generator automatically builds and rereads an Excel workbook. Choose an edited Excel file only if you made corrections outside this page.</p>
 </div>
 </section>
 <section id="pdfTool" class="hidden"><div class="panel"><h2>Screenshots → Searchable PDF</h2><p>Paste screenshots using Ctrl+V, or choose PNG/JPG images. They are not saved by the website.</p>
@@ -66,7 +66,7 @@ $('asOf').value=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dhaka',year:'num
 $('bankGrid').innerHTML=BANKS.map(([id,name],i)=>`<div class="bank-row"><label><input type="checkbox" id="use-${id}" ${i===0?'checked disabled':'checked'} title="Include in report"></label><span class="bank-name">${esc(name)}</span><button type="button" onclick="$('file-${id}').click()">Upload PDF</button><input type="file" id="file-${id}" data-bank="${id}" accept=".pdf,application/pdf" multiple onchange="displayFiles('${id}')"><span id="name-${id}" class="filename">No PDF attached</span><button class="clear" type="button" onclick="clearFiles('${id}')">Clear</button></div>`).join('');
 function displayFiles(id){const f=[...$('file-'+id).files];$('name-'+id).textContent=f.length?f.map(x=>x.name).join('; '):'No PDF attached';}
 function clearFiles(id){$('file-'+id).value='';displayFiles(id);}
-async function readServer(file){if(file.size>3_000_000)throw Error('PDF exceeds the 3 MB server limit. Use a smaller or split PDF.');const res=await fetch('/api?action=extract',{method:'POST',headers:{'content-type':'application/pdf'},body:file});const data=await res.json().catch(()=>({}));if(!res.ok)throw Error(data.error||'Could not read PDF');return data;}
+async function readServer(file){if(file.size>4_100_000)throw Error('PDF exceeds the 4 MB processing limit. Split the PDF or use a text-based version.');const res=await fetch('/api?action=extract',{method:'POST',headers:{'content-type':'application/pdf'},body:file});const data=await res.json().catch(()=>({}));if(!res.ok)throw Error(data.error||'Could not read PDF');return data;}
 async function readLocally(file){
  let pdfjs;try{pdfjs=await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs')}catch{pdfjs=await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.mjs')}
  pdfjs.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
@@ -82,13 +82,15 @@ async function readLocally(file){
 }
 async function readOne(file){
  let first=null,lastError=null;
- if(file.size<=3_000_000){try{first=await readServer(file)}catch(e){lastError=e}}
- if(first?.text?.trim()?.length>=70&&first?.layoutText?.trim()?.length>=70)return first;
- try{const local=await readLocally(file);if((local.text.length+local.layoutText.length)>String(first?.text||'').length)return local}catch(e){lastError=e}
+ if(file.size<=4_100_000){try{first=await readServer(file)}catch(e){lastError=e}}
+ // Prefer verified server-side PDF text. Do not load third-party PDF.js libraries
+ // unless the PDF actually contains no readable text or the server request fails.
+ if(first?.text?.trim()?.length>=40||first?.layoutText?.trim()?.length>=40)return first;
+ try{const local=await readLocally(file);if((local.text.length+local.layoutText.length)>40)return local}catch(e){lastError=e}
  if(first)return first;
- throw lastError||Error('PDF cannot be read');
+ throw Error('Cannot read selectable text from '+file.name+'. '+(lastError?String(lastError.message||lastError):'The PDF may be image-only or encrypted.')+' Try Screenshot → Searchable PDF or a text-based bank sheet.');
 }
-function setBusy(value){busy=value;$('readBtn').disabled=value;$('pptBtn').disabled=value;}
+function setBusy(value){busy=value;$('readBtn').disabled=value;$('pptBtn').disabled=value;if($('excelBtn'))$('excelBtn').disabled=value;}
 function errorMessage(id,text){$(id).textContent=text;$(id).classList.add('error')}
 async function readPDFs(){
  if(busy)return;setBusy(true);reviewed=null;uploaded=[];$('readStatus').classList.remove('error');$('readStatus').textContent='Reading PDFs...';
@@ -101,7 +103,8 @@ async function readPDFs(){
    try{const data=await readOne(file);uploaded.push({bankId:id,name:file.name,text:data.text||'',layoutText:data.layoutText||'',pages:data.pages||0,notice:data.notice||''});}
    catch(e){uploaded.push({bankId:id,name:file.name,text:'',layoutText:'',pages:0,notice:'FAILED: '+e.message})}
   }
-  $('readStatus').textContent='Matching bank products and MTB tenors...';
+  if(!uploaded.some(f=>String(f.text||f.layoutText||'').trim()))throw Error('No text could be read from any uploaded PDF. Check whether the PDFs have selectable text or use the Screenshot → Searchable PDF tool.');
+  $('readStatus').textContent='Matching PDF data to Excel product and tenor columns...';
   const response=await fetch('/api?action=review',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({asOf:$('asOf').value,uploads:uploaded})});
   const data=await response.json().catch(()=>({}));if(!response.ok)throw Error(data.error||'Rate matching service failed');
   reviewed=data;
@@ -112,7 +115,7 @@ async function readPDFs(){
 }
 function showReview(){
  const z=reviewed.stats;
- $('metricGrid').innerHTML=[['Matched rates',z.verified],['Missing',z.missing],['Need review',z.ambiguous],['PDFs uploaded',z.uploadedFiles]].map(([k,v])=>`<div class="metric"><strong>${v}</strong><small>${k}</small></div>`).join('');
+ $('metricGrid').innerHTML=[['Matched rates',z.verified],['Missing',z.missing],['Need review',z.ambiguous],['PDFs received',z.uploadedFiles]].map(([k,v])=>`<div class="metric"><strong>${v}</strong><small>${k}</small></div>`).join('');
  $('fileOverview').innerHTML=(reviewed.byBank||[]).filter(x=>x.uploaded).map(x=>`<div class="file-card"><b>${esc(x.name)}</b><div class="muted">${x.uploaded} PDF(s) · ${x.characters.toLocaleString()} text characters · ${x.matched} matched · ${x.ambiguous} disputed</div><small>${esc(x.files.join(', '))}</small><details><summary>View extracted PDF text</summary><pre>${esc(x.preview||'No readable text')}</pre></details>${x.issues?.length?`<small class="error">${esc(x.issues.map(i=>i.issue).slice(0,2).join('; '))}</small>`:''}</div>`).join('');
  if(!z.verified)$('reviewWarning').textContent='No rates were matched automatically. Open “View extracted PDF text” to see whether the PDF is readable, then enter the confirmed rates below before generating your PPT.';
  else $('reviewWarning').textContent='Review disputed cells and amount brackets. Confirmed rates can be corrected in the Rate column; unmatched rates will be -.';
@@ -127,13 +130,47 @@ function renderRates(){if(!reviewed)return;const bank=$('filterBank').value,prod
  document.querySelectorAll('#ratesBody input[data-index]').forEach(input=>input.addEventListener('change',()=>{const row=reviewed.rows[Number(input.dataset.index)],n=Number(input.value);if(input.value.trim()&&Number.isFinite(n)&&n>=0&&n<=30){row.rate=n;row.status='uploaded_reviewed';row.note='Manually confirmed from uploaded PDF'}else{row.rate=null;row.status='pdf_missing';row.note='No rate entered'};renderRates()}));
 }
 function backToFiles(){$('stepTwo').classList.add('hidden');$('stepOne').classList.remove('hidden');$('stepOne').scrollIntoView({behavior:'smooth'})}
-async function generatePPT(){if(!reviewed||busy)return;const completed=reviewed.rows.filter(r=>r.status==='verified'||r.status==='uploaded_reviewed').length;
- if(!completed&&!confirm('No rate values are populated. Download an all-dash report anyway?'))return;
- setBusy(true);$('pptStatus').classList.remove('error');$('pptStatus').textContent='Generating original-format presentations...';
- try{const res=await fetch('/api?action=ppt-exact',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({asOf:reviewed.asOf,records:reviewed.rows,sources:reviewed.sources})});if(!res.ok){const e=await res.json().catch(()=>({}));throw Error(e.error||'PPT generation failed')}
- const blob=await res.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='MTB_ALCO_Peer_Rates_'+reviewed.asOf+'.zip';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),18000);
- $('pptStatus').textContent='Download ready: original FDR PPT, original DPS PPT and source audit.';
- }catch(e){errorMessage('pptStatus',e.message)}finally{setBusy(false)}
+function showWorkbookName(){
+ const file=$('workbookUpload').files[0];
+ $('workbookName').textContent=file?'Selected revised workbook: '+file.name+'. This Excel file will be read to build the PowerPoints.':
+  'The PowerPoint generator automatically builds and reads an Excel workbook. You may optionally upload a corrected XLSX.';
+}
+function saveDownload(blob,name){
+ const url=URL.createObjectURL(blob),link=document.createElement('a');
+ link.href=url;link.download=name;document.body.appendChild(link);link.click();link.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),25000);
+}
+async function downloadExcel(){
+ if(busy||!reviewed)return;
+ setBusy(true);$('pptStatus').textContent='Creating your extracted-rate Excel workbook...';$('pptStatus').classList.remove('error');
+ try{
+  const res=await fetch('/api?action=excel',{method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify({asOf:reviewed.asOf,records:reviewed.rows,sources:reviewed.sources})});
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw Error(e.error||'Excel download failed')}
+  const blob=await res.blob();saveDownload(blob,'MTB_Extracted_Peer_Rates_'+reviewed.asOf+'.xlsx');
+  $('pptStatus').textContent='Excel downloaded. Edit Current Rate (%) in column H, then upload it here to generate corrected PPTs.';
+ }catch(e){errorMessage('pptStatus',String(e.message||e))}finally{setBusy(false)}
+}
+async function toBase64(file){
+ const bytes=new Uint8Array(await file.arrayBuffer());let binary='';
+ for(let i=0;i<bytes.length;i+=32768)binary+=String.fromCharCode(...bytes.subarray(i,i+32768));
+ return btoa(binary);
+}
+async function generatePPT(){
+ if(busy||!reviewed)return;
+ const file=$('workbookUpload').files[0];
+ const completed=reviewed.rows.filter(r=>(r.status==='verified'||r.status==='uploaded_reviewed')&&r.rate!==null).length;
+ if(!completed&&!file){errorMessage('pptStatus','No rates matched. Check the extracted PDF text, enter missing rates, or upload a corrected Excel workbook before generating a PPT.');return}
+ if(file&&(file.size>4_000_000||!/\.xlsx$/i.test(file.name))){errorMessage('pptStatus','Please select an .xlsx file smaller than 4 MB.');return}
+ setBusy(true);$('pptStatus').classList.remove('error');$('pptStatus').textContent='Reading Excel data and generating the original PowerPoints...';
+ try{
+  const request={asOf:reviewed.asOf,records:reviewed.rows,sources:reviewed.sources};
+  if(file)request.workbookBase64=await toBase64(file);
+  const res=await fetch('/api?action=ppt-exact',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(request)});
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw Error(e.error||'PPT generation failed')}
+  const blob=await res.blob();saveDownload(blob,'MTB_ALCO_Peer_Rates_'+reviewed.asOf+'.zip');
+  $('pptStatus').textContent='Done: original FDR & DPS PowerPoints plus the Excel rate workbook are inside the ZIP.';
+ }catch(e){errorMessage('pptStatus',String(e.message||e))}finally{setBusy(false)}
 }
 switchTab(['ppt','pdf','text'].includes(location.hash.slice(1))?location.hash.slice(1):'ppt');
 </script><script src="/pdf-generator.js" defer></script><script src="/text-pdf.js" defer></script>
