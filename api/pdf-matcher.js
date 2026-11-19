@@ -106,9 +106,11 @@ export function analyzeUploadedPDFs(uploads,products,banks){
   for(let page=0;page<pageParts.length;page++){
    const lines=pageParts[page].split(/\r?\n/).map(clean).filter(Boolean);
    seenLines+=lines.length;
-   let active=[],lastAt=-100,headers=[];
+   let active=[],lastAt=-100,headers=[],discontinued=false;
    for(let i=0;i<lines.length;i++){
     const line=lines[i];
+    if(/list of discontinued products|fresh booking is not allowed/i.test(line)){discontinued=true;active=[];headers=[];continue;}
+    if(discontinued)continue;
     if(isSectionBreak(line)){active=[];headers=[];lastAt=-100;continue}
     const hits=lineLabels(line,products,up.bankId);
     if(hits.length){active=hits;lastAt=i}
