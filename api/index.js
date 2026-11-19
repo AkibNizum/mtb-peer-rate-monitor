@@ -22,7 +22,7 @@ function quoteJSON(data){try{return JSON.parse(data.toString('utf8')||'{}')}catc
 async function extractPDF(req,res){
  const kind=String(req.headers['content-type']||'').split(';')[0].trim();
  if(kind!=='application/pdf')throw error('Upload a PDF document, not an image');
- const file=await rawRequest(req,LIMIT);
+ const file=await rawRequest(req,4_100_000);
  if(file.length<5||file.subarray(0,4).toString()!=='%PDF')throw error('The selected file is not a readable PDF');
  let plain=null,layout=null,plainIssue='',layoutIssue='';
  try{plain=await pdfParse(file)}catch(e){plainIssue=String(e.message||e).slice(0,160)}
