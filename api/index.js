@@ -3,6 +3,7 @@ import {banks,products} from './catalog.js';
 import {deriveRate} from './extractor.js';
 import {analyzeUploadedPDFs} from './pdf-matcher.js';
 import {generateExactReports} from './exact-template.js';
+import {buildRateWorkbook,readRateWorkbook} from './workbook.js';
 
 export const config={api:{bodyParser:false}};
 const LIMIT=3_100_000;
@@ -147,12 +148,33 @@ async function analyzeReport(req,res){
  const result=completePDFReview(uploads,asOf);
  return res.status(200).json(result);
 }
+async function buildExcel(req,res){
+ const input=quoteJSON(await rawRequest(req,3_100_000));
+ const date=String(input.asOf||todayDhaka());
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Array.isArray(input.records)||input.records.length<50)
+  throw error('Read your PDFs first to create a rate workbook');
+ const workbook=await buildRateWorkbook({asOf:date,records:input.records,sources:input.sources});
+ res.status(200).setHeader('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+ res.setHeader('Content-Disposition','attachment; filename="MTB_Extracted_Peer_Rates_'+date+'.xlsx"');
+ res.setHeader('Content-Length',workbook.length);
+ return res.end(workbook);
+}
 async function downloadExact(req,res){
- const input=quoteJSON(await rawRequest(req,LIMIT));
+ const input=quoteJSON(await rawRequest(req,3_100_000));
  const date=String(input.asOf||'');
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw error('Invalid presentation date');
- if(!Array.isArray(input.records)||input.records.length<50)throw error('Click Read PDFs before generating the report');
- const data=await generateExactReports(input);
+ let workbook;
+ if(input.workbookBase64){
+  if(typeof input.workbookBase64!=='string'||input.workbookBase64.length>5_500_000)throw error('Excel file is too large');
+  workbook=Buffer.from(input.workbookBase64,'base64');
+ }else{
+  if(!Array.isArray(input.records)||input.records.length<50)throw error('Read your PDFs first');
+  workbook=await buildRateWorkbook({asOf:date,records:input.records,sources:input.sources});
+ }
+ // Critical: the exact-template PPT is populated from parsed XLSX cells, not raw PDF result rows.
+ const parsed=await readRateWorkbook(workbook);
+ if(!parsed.matched)throw error('No current rates in the Excel workbook. Check PDF readability or fill rate cells before generating a PPT.');
+ const data=await generateExactReports({...input,records:parsed.records,workbook});
  res.status(200).setHeader('Content-Type','application/zip');
  res.setHeader('Content-Disposition','attachment; filename="MTB_ALCO_Peer_Rates_'+date+'.zip"');
  res.setHeader('Content-Length',data.length);
@@ -162,11 +184,12 @@ export default async function handler(req,res){
  res.setHeader('Cache-Control','no-store');
  try{
   const action=String(req.query?.action||'health');
-  if(action==='health')return res.status(200).json({ok:true,version:'4.1',public:true,sourcePolicy:'uploaded-PDFs-only',dateVerification:false,savedReports:false});
+  if(action==='health')return res.status(200).json({ok:true,version:'5.0',public:true,sourcePolicy:'uploaded-PDFs-only',dateVerification:false,savedReports:false,excelIntermediate:true});
   if(action==='extract'&&req.method==='POST')return await extractPDF(req,res);
   if(action==='review'&&req.method==='POST')return await analyzeReport(req,res);
+  if(action==='excel'&&req.method==='POST')return await buildExcel(req,res);
   if(action==='ppt-exact'&&req.method==='POST')return await downloadExact(req,res);
-  return res.status(404).json({error:'Supported actions: extract, review, ppt-exact. No website scraping or report storage.'});
+  return res.status(404).json({error:'Supported actions: extract, review, excel, ppt-exact. No website scraping or report storage.'});
  }catch(e){
   console.error('ALCO tool error:',String(e.message||e));
   if(!res.headersSent)return res.status(e.status||500).json({error:String(e.message||e)});
